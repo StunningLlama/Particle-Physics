@@ -91,5 +91,8 @@
     <None Include="font.fs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="shaderp.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

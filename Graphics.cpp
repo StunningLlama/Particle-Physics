@@ -21,12 +21,12 @@ void Graphics::updatebuffer() {
 		instance->sim->g_dbglines[p->id * 4 + 2] = 2.0f*((p->gridx + 0.5f)*sim_interactiondistancemax) / sim_width - 1.0f;
 		instance->sim->g_dbglines[p->id * 4 + 3] = 2.0f*((p->gridy + 0.5f)*sim_interactiondistancemax) / sim_height - 1.0f;
 
-		float dp = p->pressure - p->avgpressure;
+		float dp = (p->avgpressure - 9.0f) * 0.5f;
 		instance->sim->g_pressures[p->id * 4] = dp;
 		instance->sim->g_pressures[p->id * 4 + 1] = dp;
 		instance->sim->g_pressures[p->id * 4 + 2] = dp;
 		instance->sim->g_pressures[p->id * 4 + 3] = dp;
-		p->avgpressure = p->avgpressure * 0.98f + p->pressure*0.02f;
+		p->avgpressure = p->avgpressure * 0.9f + p->pressure*0.1f;
 		p->pressure = 0.0f;
 	}
 
@@ -61,7 +61,10 @@ void Graphics::display() {
 	mat[2][0] = -1.0f;
 	mat[2][1] = -1.0f;
 
-	glUseProgram(particleShader);
+	if (shadermode == 0)
+		glUseProgram(particleShaderNormal);
+	if (shadermode == 1)
+		glUseProgram(particleShaderPressure);
 
 	glUniformMatrix3fv(gTransform, 1, GL_FALSE, &mat[0][0]);
 	glEnableVertexAttribArray(0);
@@ -93,12 +96,18 @@ void Graphics::display() {
 	glUseProgram(fontShader);
 
 	glUniform3f(gFontColor, 0.5f, 0.0f, 0.0f);
-	glUniformMatrix3fv(gTransform, 1, GL_FALSE, &mat[0][0]);
+
+	if (shadermode == 0)
+		glUniformMatrix3fv(gTransform, 1, GL_FALSE, &mat[0][0]);
+	if (shadermode == 1)
+		glUniformMatrix3fv(gTransform2, 1, GL_FALSE, &mat[0][0]);
+
 	font.RenderText(fontShader, instance->input->brushnames[instance->input->modebrush], instance->sim->xbound - 1.0f, instance->sim->ybound - 5.0f, 0.1f, true);
 	font.RenderText(fontShader, instance->input->materialnames[instance->input->modematerial], instance->sim->xbound - 1.0f, instance->sim->ybound - 10.0f, 0.1f, true);
 	font.RenderText(fontShader, instance->input->sizenames[instance->input->brushsize-1], instance->sim->xbound - 1.0f, instance->sim->ybound - 15.0f, 0.1f, true);
 	font.RenderText(fontShader, instance->input->densitynames[instance->input->density - 1], instance->sim->xbound - 1.0f, instance->sim->ybound - 20.0f, 0.1f, true);
 	font.RenderText(fontShader, "Particles: " + std::to_string(instance->sim->particleid), 1.0f, instance->sim->ybound - 5.0f, 0.1f, false);
+	font.RenderText(fontShader, "Time: " + std::to_string(instance->sim->stime), 1.0f, instance->sim->ybound - 10.0f, 0.1f, false);
 	if (instance->input->paused)
 		font.RenderText(fontShader, "Paused", 1.0f, instance->sim->ybound - 10.0f, 0.1f, false);
 	glUseProgram(0);
@@ -246,8 +255,10 @@ int Graphics::initializeGraphics() {
 	glPointSize(10.f);
 	glLineWidth(2.0f);
 	CreateVertexBuffer();
-	CompileShaders(particleShader, pVSFileName, pFSFileName);
-	gTransform = glGetUniformLocation(particleShader, "transform");
+	CompileShaders(particleShaderNormal, vsParticle, fsParticleNormal);
+	CompileShaders(particleShaderPressure, vsParticlePressure, fsParticleNormal);
+	gTransform = glGetUniformLocation(particleShaderNormal, "transform");
+	gTransform3 = glGetUniformLocation(particleShaderPressure, "transform");
 	CompileShaders(fontShader, fVSFileName, fFSFileName);
 	gTransform2 = glGetUniformLocation(fontShader, "transform");
 	gFontColor = glGetUniformLocation(fontShader, "textColor");

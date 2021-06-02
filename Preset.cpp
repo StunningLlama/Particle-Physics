@@ -70,6 +70,50 @@ void Preset::genToilet() {
 	frame++;
 }
 
+
+void Preset::startAirfoil() {
+	drawing = true;
+	frame = 0;
+	instance->input->updateMouse = false;
+	instance->input->coordX = 0.0f;
+	instance->input->coordY = 0.0f;
+	instance->input->keyboard('b', 0, 0);
+	instance->input->keyboard('a', 0, 0);
+	instance->input->keyboard('1', 0, 0);
+}
+
+void Preset::genAirfoil() {
+	Input* in = instance->input;
+	float centerx = 100.0f;
+	float centery = 130.0f;
+	float scale = 40.0f;
+
+	if (frame == 0) {
+		in->mouseDown = true;
+		in->coordX = centerx + scale * xParam(0);
+		in->coordY = centery + scale * yParam(0);
+	}
+	else if (frame < 200) {
+		float frac = frame / 200.0f;
+		in->coordX = centerx + scale * xParam(frac*8.0f);
+		in->coordY = centery + scale * yParam(frac * 8.0f);
+	}
+	else if (frame == 200) {
+		drawing = false;
+		in->mouseDown = false;
+		instance->input->updateMouse = true;
+	}
+	frame++;
+}
+
+float Preset::xParam(float t) {
+	return sqrt(1 + (4.0f - t) * (4.0f - t)) - 1;
+}
+
+float Preset::yParam(float t) {
+	return 0.25*((atan(1.2f * (t - 4.0f)) - atan(-4.0f * 1.2f)) * (atan(0.4f * (8.0f - t))));
+}
+
 float Preset::toRad(float deg) {
 	return ((float)M_PI)*deg / 180.0f;
 }

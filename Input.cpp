@@ -72,6 +72,11 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		brushsize = 5;
 
 
+	if (key == '9')
+		instance->gphx->shadermode = 1;
+	if (key == '8')
+		instance->gphx->shadermode = 0;
+
 	if (key == '=')
 		density++;
 	if (key == '-')

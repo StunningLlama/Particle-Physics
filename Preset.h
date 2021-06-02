@@ -4,6 +4,14 @@ class Preset {
 public:
 	void startToilet();
 	void genToilet();
+
+
+	void startAirfoil();
+	void genAirfoil();
+
+	float xParam(float t);
+	float yParam(float t);
+
 	bool drawing = false;
 	int frame = 0;
 

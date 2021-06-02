@@ -45,7 +45,9 @@ public:
 
 	void update();
 	void applyPhys(int start, int end, int ind);
+	void tryAddParticle(float fx, float fy, float critdistance, bool replace, int material);
 	void addRandomParticle();
+	void appBC();
 	void addParticle(float x, float y, float vx, float vy, int type);
 	void deleteParticle(int id);
 	void clear();
@@ -78,6 +80,7 @@ public:
 	float br_totlen = 0.0f;
 	float br_extralength_2 = 0.0f;
 	float density = 1.0f;
+	float stime = 0.0f;
 	unsigned char colortable[sim_materials][3] = { {0, 127, 255}, {127, 180, 196}, {127, 63, 0} };
 	float masstable[sim_materials] = { 1.0f, 0.2f, 1.0f };
 	float characteristicradius[sim_materials] = { 7.5f*0.5f, 7.5f*0.4f,  7.5f*0.3f };
