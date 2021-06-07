@@ -58,6 +58,8 @@ void Input::keyboard(unsigned char key, int x, int y) {
 	if (key == 'c')
 		clear = true;
 	if (key == 'f')
+		nextframe = true;
+	if (key == 'x')
 		specialfunc = true;
 
 	if (key == '1')
@@ -72,15 +74,21 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		brushsize = 5;
 
 
+	if (key == '0')
+		instance->gphx->shadermode = (instance->gphx->shadermode + 1) % 3;
 	if (key == '9')
-		instance->gphx->shadermode = 1;
-	if (key == '8')
-		instance->gphx->shadermode = 0;
+		instance->gphx->bgmode = (instance->gphx->bgmode + 1) % 2;
 
 	if (key == '=')
 		density++;
 	if (key == '-')
 		density--;
+
+
+	if (key == ']')
+		instance->sim->flowvelocity *= 1.05;
+	if (key == '[')
+		instance->sim->flowvelocity /= 1.05;
 
 	if (density < 0)
 		density = 0;

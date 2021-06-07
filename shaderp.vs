@@ -15,5 +15,5 @@ void main()
     gl_Position = vec4((transform*vec3(Position, 1.0)).xy, 0.0, 1.0);
 	UV = vertexUV;
 	pressure = pressureIn;
-	color = vec3(pressure, 0.0, 1.0);
+	color = vec3(pressure*2.0-1.0, pressure*2.0-0.5, pressure*2.0);
 }

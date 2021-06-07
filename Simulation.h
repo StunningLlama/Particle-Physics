@@ -28,16 +28,24 @@
 #define sim_type_air 1
 #define sim_type_barrier 2
 
-#define sim_interactions 4
+#define sim_interactions 5
 
 #define sim_interaction_none -1
 #define sim_interaction_water_water 0
 #define sim_interaction_air_air 1
 #define sim_interaction_water_air 2
 #define sim_interaction_water_barrier 3
+#define sim_interaction_air_barrier 4
 
 #define sim_forcestrength_water 8.0f
 #define sim_forcestrength_air 8.0f
+
+#define rngLUTsize 10000
+
+#define pressureXpoints 40
+#define pressureYpoints 40
+
+#define EPSILON 0.0001f
 
 class Simulation {
 public:
@@ -53,6 +61,7 @@ public:
 	void clear();
 	void Simulation::test(int i);
 	float randFloat(float max);
+	float randFloatNormal();
 	void getInput();
 	void saveToFile(std::string name);
 	void loadFromFile(std::string name);
@@ -63,9 +72,11 @@ public:
 	void airAirParams();
 	void waterAirParams();
 	void waterBarrierParams();
+	void airBarrierParams();
 
 	int particleid;
 	float forcetable[sim_interactions][sim_interactionresolution + 1];
+	float potentialtable[sim_interactions][sim_interactionresolution + 1];
 	float diffusiontable[sim_interactions][sim_interactionresolution + 1];
 	float interactiondists[sim_interactions];
 	float interactiondistssq[sim_interactions];
@@ -81,6 +92,14 @@ public:
 	float br_extralength_2 = 0.0f;
 	float density = 1.0f;
 	float stime = 0.0f;
+	float flowvelocity = 4.5f;
+	float overallpressure = 0.0f;
+	float avgoverallpressure = 0.0f;
+	float maxlifespan = 1.0;
+	float localpressure[pressureYpoints][pressureXpoints] = { 1.0 };
+	float localpressureavg[pressureYpoints][pressureXpoints] = { 1.0 };
+	float lpparticlecount[pressureXpoints][pressureYpoints] = { 1 };
+
 	unsigned char colortable[sim_materials][3] = { {0, 127, 255}, {127, 180, 196}, {127, 63, 0} };
 	float masstable[sim_materials] = { 1.0f, 0.2f, 1.0f };
 	float characteristicradius[sim_materials] = { 7.5f*0.5f, 7.5f*0.4f,  7.5f*0.3f };
@@ -107,6 +126,11 @@ public:
 
 	//std::normal_distribution<float> normalDistr;
 	//std::mt19937 generator;
+	std::default_random_engine generator;
+	std::normal_distribution<float> distribution;
+
+	float rngLUT[rngLUTsize];
+	int rngLUTindex = 0;
 
 	int threads;
 	std::mutex *mtx;

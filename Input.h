@@ -25,6 +25,7 @@ public:
 		bool save = false;
 		bool load = false;
 		bool clear = false;
+		bool nextframe = false;
 		bool specialfunc = false;
 		int modebrush = mode_brush_move;
 		int modematerial = sim_type_water;

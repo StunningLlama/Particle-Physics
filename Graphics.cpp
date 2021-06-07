@@ -21,16 +21,14 @@ void Graphics::updatebuffer() {
 		instance->sim->g_dbglines[p->id * 4 + 2] = 2.0f*((p->gridx + 0.5f)*sim_interactiondistancemax) / sim_width - 1.0f;
 		instance->sim->g_dbglines[p->id * 4 + 3] = 2.0f*((p->gridy + 0.5f)*sim_interactiondistancemax) / sim_height - 1.0f;
 
-		float dp = (p->avgpressure - 9.0f) * 0.5f;
+		float dp = (p->avgpressure - instance->sim->avgoverallpressure) * 0.25f + 0.5f;
 		instance->sim->g_pressures[p->id * 4] = dp;
 		instance->sim->g_pressures[p->id * 4 + 1] = dp;
 		instance->sim->g_pressures[p->id * 4 + 2] = dp;
 		instance->sim->g_pressures[p->id * 4 + 3] = dp;
-		p->avgpressure = p->avgpressure * 0.9f + p->pressure*0.1f;
-		p->pressure = 0.0f;
 	}
 
-	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0); 
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBOv);
 	//glBufferData(GL_ARRAY_BUFFER, sizeof(a),&a, GL_DYNAMIC_DRAW);
@@ -49,6 +47,10 @@ void Graphics::updatebuffer() {
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBOc);
 	glBufferData(GL_ARRAY_BUFFER, instance->sim->g_colors.size()*sizeof(unsigned char), &instance->sim->g_colors[0], GL_DYNAMIC_DRAW);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bgTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, pressureXpoints, pressureYpoints, 0, GL_RED, GL_FLOAT, &instance->sim->localpressureavg);
 }
 
 
@@ -61,46 +63,72 @@ void Graphics::display() {
 	mat[2][0] = -1.0f;
 	mat[2][1] = -1.0f;
 
-	if (shadermode == 0)
+
+	if (bgmode == 1) {
+		glUseProgram(backgroundShader);
+		glUniform1i(gTexture, 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, bgTexture);
+
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBObgPos);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBObgUV);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glDrawArrays(GL_QUADS, 0, 4);
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+
+		glUseProgram(0);
+	}
+
+	if (shadermode == 1) {
 		glUseProgram(particleShaderNormal);
-	if (shadermode == 1)
+		glUniformMatrix3fv(gTransform, 1, GL_FALSE, &mat[0][0]);
+	}
+	if (shadermode == 2) {
 		glUseProgram(particleShaderPressure);
+		glUniformMatrix3fv(gTransform3, 1, GL_FALSE, &mat[0][0]);
+	}
 
-	glUniformMatrix3fv(gTransform, 1, GL_FALSE, &mat[0][0]);
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
+	if (shadermode == 1 || shadermode == 2) {
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
+		glEnableVertexAttribArray(3);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBOv);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, VBOv);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBOuv);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, VBOuv);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBOp);
-	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, VBOp);
+		glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBOc);
-	glVertexAttribPointer(3, 3, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, VBOc);
+		glVertexAttribPointer(3, 3, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
 
-	glDrawArrays(GL_QUADS, 0, instance->sim->particleid*4);
+		glDrawArrays(GL_QUADS, 0, instance->sim->particleid * 4);
 
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(2);
-	glDisableVertexAttribArray(3);
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+		glDisableVertexAttribArray(3);
 
-	glUseProgram(0);
+		glUseProgram(0);
+	}
 
 	glUseProgram(fontShader);
 
 	glUniform3f(gFontColor, 0.5f, 0.0f, 0.0f);
 
-	if (shadermode == 0)
-		glUniformMatrix3fv(gTransform, 1, GL_FALSE, &mat[0][0]);
-	if (shadermode == 1)
-		glUniformMatrix3fv(gTransform2, 1, GL_FALSE, &mat[0][0]);
+	glUniformMatrix3fv(gTransform2, 1, GL_FALSE, &mat[0][0]);
 
 	font.RenderText(fontShader, instance->input->brushnames[instance->input->modebrush], instance->sim->xbound - 1.0f, instance->sim->ybound - 5.0f, 0.1f, true);
 	font.RenderText(fontShader, instance->input->materialnames[instance->input->modematerial], instance->sim->xbound - 1.0f, instance->sim->ybound - 10.0f, 0.1f, true);
@@ -109,7 +137,7 @@ void Graphics::display() {
 	font.RenderText(fontShader, "Particles: " + std::to_string(instance->sim->particleid), 1.0f, instance->sim->ybound - 5.0f, 0.1f, false);
 	font.RenderText(fontShader, "Time: " + std::to_string(instance->sim->stime), 1.0f, instance->sim->ybound - 10.0f, 0.1f, false);
 	if (instance->input->paused)
-		font.RenderText(fontShader, "Paused", 1.0f, instance->sim->ybound - 10.0f, 0.1f, false);
+		font.RenderText(fontShader, "Paused", 1.0f, instance->sim->ybound - 15.0f, 0.1f, false);
 	glUseProgram(0);
 
 	/*glEnableVertexAttribArray(0);
@@ -129,6 +157,8 @@ void Graphics::CreateVertexBuffer()
 	glGenBuffers(1, &VBOd);
 	glGenBuffers(1, &VBOp);
 	glGenBuffers(1, &VBOc);
+	glGenBuffers(1, &VBObgPos);
+	glGenBuffers(1, &VBObgUV);
 	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	//glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
 }
@@ -255,6 +285,21 @@ int Graphics::initializeGraphics() {
 	glPointSize(10.f);
 	glLineWidth(2.0f);
 	CreateVertexBuffer();
+
+	glGenTextures(1, &bgTexture);
+	glBindTexture(GL_TEXTURE_2D, bgTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBObgPos);
+	glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), &bgPosData, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBObgUV);
+	glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), &bgUVdata, GL_STATIC_DRAW);
+
+
 	CompileShaders(particleShaderNormal, vsParticle, fsParticleNormal);
 	CompileShaders(particleShaderPressure, vsParticlePressure, fsParticleNormal);
 	gTransform = glGetUniformLocation(particleShaderNormal, "transform");
@@ -262,6 +307,8 @@ int Graphics::initializeGraphics() {
 	CompileShaders(fontShader, fVSFileName, fFSFileName);
 	gTransform2 = glGetUniformLocation(fontShader, "transform");
 	gFontColor = glGetUniformLocation(fontShader, "textColor");
+	CompileShaders(backgroundShader, vsBackground, fsBackground);
+	gTexture = glGetUniformLocation(backgroundShader, "BGtexture");
 	//std::cout << gTransform2 << std::endl;
 	std::cout << gFontColor << std::endl;
 	//std::cout << glGetUniformLocation(fontShader, "text") << std::endl;

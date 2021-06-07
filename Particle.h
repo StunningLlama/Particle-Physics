@@ -22,7 +22,8 @@ public:
 	float mass = 1.0f;
 	float pressure = 0.0f;
 	float avgpressure = 0.0f;
-	float lifespan = 0.0f;
+	float lifetime = 0.0f;
+	bool deletionimminent = false;
 
 	int gridx = 0;
 	int gridy = 0;

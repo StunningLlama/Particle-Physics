@@ -94,5 +94,11 @@
     <None Include="shaderp.vs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="background.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="background.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

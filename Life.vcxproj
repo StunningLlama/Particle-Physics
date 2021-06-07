@@ -178,6 +178,8 @@
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="background.fs" />
+    <None Include="background.vs" />
     <None Include="font.fs" />
     <None Include="font.vs" />
     <None Include="shader.fs" />
