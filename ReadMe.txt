@@ -1,3 +1,5 @@
+=== Wind Tunnel ===
+
 Key Action
 A	Brush mode: Add
 R	Brush mode: Replace
@@ -12,6 +14,7 @@ P	Pause
 S	Save from file
 L	Load from file
 C	Reset simulation
+F	Advance frame
 
 1	Brush size: 1
 2	Brush size: 2
@@ -19,7 +22,13 @@ C	Reset simulation
 4	Brush size: 4
 5	Brush size: 5
 
+9	Change background look (Blank/Pressure)
+0	Change particle look (Material/Pressure/Invisible)
+
 +	Increase density
 -	Decrease density
 
-F	Special function 
+]	Increase flow velocity
+[	Decrease flow velocity
+
+X	Special function 

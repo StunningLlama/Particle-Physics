@@ -9,9 +9,13 @@ void Input::mouseClick(int button, int state, int x, int y) {
 	if (!updateMouse)
 		return;
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-		this->mouseDown = true;
+		this->mouseDownL = true;
 	else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP)
-		this->mouseDown = false;
+		this->mouseDownL = false;
+	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+		this->mouseDownR = true;
+	else if (button == GLUT_RIGHT_BUTTON && state == GLUT_UP)
+		this->mouseDownR = false;
 }
 
 void Input::mouseMotion(int x, int y) {
@@ -48,6 +52,8 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		modematerial = sim_type_air;
 	if (key == 'b')
 		modematerial = sim_type_barrier;
+	if (key == 'z')
+		modematerial = sim_type_stone;
 
 	if (key == 'p')
 		paused = !paused;
@@ -58,6 +64,8 @@ void Input::keyboard(unsigned char key, int x, int y) {
 	if (key == 'c')
 		clear = true;
 	if (key == 'f')
+		nextframe = true;
+	if (key == 'x')
 		specialfunc = true;
 
 	if (key == '1')
@@ -72,13 +80,36 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		brushsize = 5;
 
 
+	if (key == '0')
+		instance->gphx->shadermode = (instance->gphx->shadermode + 1) % 3;
+	if (key == '9')
+		instance->gphx->bgmode = (instance->gphx->bgmode + 1) % 2;
+
 	if (key == '=')
 		density++;
 	if (key == '-')
 		density--;
 
+
+	if (key == ']')
+		instance->sim->flowvelocity *= 1.05f;
+	if (key == '[')
+		instance->sim->flowvelocity /= 1.05f;
+
 	if (density < 0)
 		density = 0;
 	if (density > 5)
 		density = 5;
+}
+
+
+void Input::special(int key, int x, int y) {
+	if (key == GLUT_KEY_F9)
+		instance->gphx->pressurecontrast /= 1.1f;
+	if (key == GLUT_KEY_F10)
+		instance->gphx->pressurecontrast *= 1.1f;
+	if (key == GLUT_KEY_F11)
+		instance->gphx->pressureoffset -= 0.1f;
+	if (key == GLUT_KEY_F12)
+		instance->gphx->pressureoffset += 0.1f;
 }

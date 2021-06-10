@@ -8,6 +8,7 @@
 #include "Life.h"
 #include "Input.h"
 #include "Timer.h"
+#include "Rigidbody.h"
 #include <vector>
 #include <cstdlib>
 #include <time.h>
@@ -35,22 +36,18 @@ Simulation::Simulation() {
 	airAirParams();
 	waterAirParams();
 	waterBarrierParams();
-
-	interactiontable[sim_type_water][sim_type_water] = sim_interaction_water_water;
-	interactiontable[sim_type_water][sim_type_air] = sim_interaction_water_air;
-	interactiontable[sim_type_water][sim_type_barrier] = sim_interaction_water_barrier;
-
-	interactiontable[sim_type_air][sim_type_water] = sim_interaction_water_air;
-	interactiontable[sim_type_air][sim_type_air] = sim_interaction_air_air;
-	interactiontable[sim_type_air][sim_type_barrier] = sim_interaction_air_air;
-
-	interactiontable[sim_type_barrier][sim_type_water] = sim_interaction_water_barrier;
-	interactiontable[sim_type_barrier][sim_type_air] = sim_interaction_air_air;
-	interactiontable[sim_type_barrier][sim_type_barrier] = sim_interaction_none;
+	airBarrierParams();
+	stoneBarrierParams();
 
 
 	for (int i = 0; i < sim_interactions; i++) {
 		interactiondistssq[i] = interactiondists[i] * interactiondists[i];
+		for (int j = 0; j < sim_interactionresolution; j++) {
+			for (int k = j; k < sim_interactionresolution; k++) {
+				potentialtable[i][j] += 0.5f*(forcetable[i][k] + forcetable[i][k+1]);
+			}
+		}
+		potentialtable[i][sim_interactionresolution] = 0;
 	}
 
 	//density = 1.0*sqrt(particleid / (sim_gridrows*sim_gridcolumns));
@@ -63,6 +60,17 @@ Simulation::Simulation() {
 	cv = new std::condition_variable[threads];
 	ready = new bool[threads];
 
+	distribution = std::normal_distribution<float>(0, 1.0);
+
+	for (int i = 0; i < rngLUTsize; i++) {
+		rngLUT[i] = distribution(generator);
+	}
+
+	for (int x = 0; x < pressureXpoints; x++) {
+		for (int y = 0; y < pressureYpoints; y++) {
+			localpressure[y][x] = 0.0;
+		}
+	}
 
 	int *cuts = new int[threads + 1];
 
@@ -79,7 +87,6 @@ Simulation::Simulation() {
 		ready[i] = false;
 		//threadarray[i] = std::thread(&Simulation::test, this, 0);
 	}
-
 	//normalDistr = normal_distribution<float>(0.0f, sim_jiggle_strength);
 	//generator = mt19937(123);
 }
@@ -133,6 +140,14 @@ void Simulation::airAirParams() {
 	}
 }
 
+void Simulation::airBarrierParams() {
+	interactiondists[sim_interaction_air_barrier] = 7.5f;
+	for (int i = 0; i < sim_interactionresolution + 1; i++) {
+		float r = ((float)i) / (float)sim_interactionresolution;
+		forcetable[sim_interaction_air_barrier][i] = (1.0f - r) * sim_forcestrength_air;
+		diffusiontable[sim_interaction_air_barrier][i] = 0.2f*0.125f * (1.0f - r);
+	}
+}
 
 void Simulation::waterAirParams() {
 	interactiondists[sim_interaction_water_air] = 7.5f;
@@ -157,6 +172,15 @@ void Simulation::waterBarrierParams() {
 	}
 }
 
+void Simulation::stoneBarrierParams() {
+	interactiondists[sim_interaction_stone_barrier] = 7.5f;
+	for (int i = 0; i < sim_interactionresolution + 1; i++) {
+		float r = ((float)i) / (float)sim_interactionresolution;
+		forcetable[sim_interaction_stone_barrier][i] = (1.0f - r) * sim_forcestrength_stone;
+		diffusiontable[sim_interaction_stone_barrier][i] = 1.0f*0.125f * (1.0f - r);
+	}
+}
+
 void Simulation::applyPhys(int start, int end, int ind) {
 	while (true) {
 
@@ -165,10 +189,39 @@ void Simulation::applyPhys(int start, int end, int ind) {
 
 		for (int i = start; i < end; i++)
 		{
-			int px = i / sim_gridcolumns;
+			int px = i / sim_gridrows;
 			int py = i % sim_gridrows;
 			Particle *p = grid[px][py];
 			while (p != nullptr) {
+
+				float bdistdiffusion = 8.0 * sim_interactiondistancemax;
+
+				float bproximitydiffusion = 1.0;
+
+				if (p->x < bdistdiffusion) {
+					bproximitydiffusion = fmin(bproximitydiffusion, p->x / bdistdiffusion);
+					if (p->x < 0)
+						bproximitydiffusion = 0;
+				}
+				if (p->y < bdistdiffusion) {
+					bproximitydiffusion = fmin(bproximitydiffusion, p->y / bdistdiffusion);
+					if (p->y < 0)
+						bproximitydiffusion = 0;
+				}
+				if (xbound - p->x < bdistdiffusion) {
+					bproximitydiffusion = fmin(bproximitydiffusion, (xbound - p->x) / bdistdiffusion);
+					if (xbound - p->x < 0)
+						bproximitydiffusion = 0;
+				}
+				if (ybound - p->y < bdistdiffusion) {
+					bproximitydiffusion = fmin(bproximitydiffusion, (ybound - p->y) / bdistdiffusion);
+					if (ybound - p->y < 0)
+						bproximitydiffusion = 0;
+				}
+
+				bproximitydiffusion = (1.0f - bproximitydiffusion);
+				//bproximitydiffusion = sin(bproximitydiffusion * 3.1415926);
+
 				for (int dx = -1; dx <= 1; dx++) {
 					for (int dy = -1; dy <= 1; dy++) {
 						int gx = p->gridx + dx;
@@ -180,7 +233,7 @@ void Simulation::applyPhys(int start, int end, int ind) {
 							if (p->id > q->id)
 							{
 								int interactionnum = interactiontable[p->material][q->material];
-								if (interactionnum == sim_interaction_none) {
+								if (interactionnum == sim_interaction_none || (interactionnum == sim_interaction_stone_barrier && p->rigidbodyid != -1 && q->rigidbodyid != -1 && p->rigidbodyid == q->rigidbodyid)) {
 									q = q->next;
 									continue;
 								}
@@ -193,6 +246,13 @@ void Simulation::applyPhys(int start, int end, int ind) {
 									float df = dn - di;
 									float force = forcetable[interactionnum][di] * (1.0f - df) + forcetable[interactionnum][di + 1] * df;
 									float diffusion = diffusiontable[interactionnum][di] * (1.0f - df) + diffusiontable[interactionnum][di + 1] * df;
+
+									force = force * p->lifetime * q->lifetime;
+									diffusion = diffusion * p->lifetime * q->lifetime;
+
+									float diffusion0 = diffusion;
+									diffusion *= (5.0* bproximitydiffusion + 1.0);
+
 									float xr = (q->x - p->x) / dist;
 									float yr = (q->y - p->y) / dist;
 
@@ -201,14 +261,15 @@ void Simulation::applyPhys(int start, int end, int ind) {
 									float fparallel = (deltavx*xr + deltavy*yr)*sim_diffstrength_vel_para*diffusion;
 									if (interactionnum == sim_interaction_water_water)
 										fparallel *= 4.0f;
-									float fperp = (-deltavx*yr + deltavy*xr)*sim_diffstrength_vel_perp*diffusion + (randFloat(2.0f) - 1.0f)*diffusion*jiggle[p->material][q->material];
-
+									float fperp = (-deltavx * yr + deltavy * xr) * sim_diffstrength_vel_perp * diffusion + diffusion0* randFloatNormal()*jiggle[p->material][q->material];
+									if (interactionnum == sim_interaction_stone_barrier)
+										fperp += (-deltavx * yr + deltavy * xr) >= 0? 1.0f: -1.0f;
 									float fx = force*xr + xr*fparallel - yr*fperp;
 									float fy = force*yr + yr*fparallel + xr*fperp + sim_buoyancy*(p->mass-q->mass)*diffusion;
-									p->dvx -= fx / p->mass;
-									p->dvy -= fy / p->mass;
-									q->dvx += fx / q->mass;
-									q->dvy += fy / q->mass;
+									p->forcex -= fx;
+									p->forcey -= fy;
+									q->forcex += fx;
+									q->forcey += fy;
 
 									/*Force f;
 									f.id = q->id;
@@ -221,8 +282,8 @@ void Simulation::applyPhys(int start, int end, int ind) {
 									f.fy = fy;
 									q->forces->push_back(f);*/
 
-									p->pressure += force;
-									q->pressure += force;
+									p->pressure += force/dist;
+									q->pressure += force/dist;
 								}
 							}
 							q = q->next;
@@ -235,45 +296,59 @@ void Simulation::applyPhys(int start, int end, int ind) {
 				p->dvx += randr*cos(randtheta);
 				p->dvy += randr*sin(randtheta);*/
 
-				int interactiontype = interactiontable[sim_type_barrier][p->material];
-				float boundarydist = interactiondists[interactiontype];
+				float boundarydist = 2.0*sim_interactiondistancemax;
+
+				float dn = 1.0;
+
 				if (p->x < boundarydist) {
-					float dn = (p->x / boundarydist) * sim_interactionresolution;
+					dn = fmin(dn, (p->x / boundarydist));
 					if (p->x < 0)
 						dn = 0;
-					int di = (int)dn;
-					float df = dn - di;
-					p->dvx += density*(forcetable[interactiontype][di] * (1.0f - df) + forcetable[interactiontype][di + 1] * df) /*- 2*(diffusiontable[di] * (1.0f - df) + diffusiontable[di + 1] * df)*sim_diffstrength_vel_para*p->vx)*/ / p->mass;
 				}
 				if (p->y < boundarydist) {
-					float dn = (p->y / boundarydist) * sim_interactionresolution;
+					dn = fmin(dn, (p->y / boundarydist));
 					if (p->y < 0)
 						dn = 0;
-					int di = (int)dn;
-					float df = dn - di;
-					p->dvy += density*(forcetable[interactiontype][di] * (1.0f - df) + forcetable[interactiontype][di + 1] * df) / p->mass;
 				}
 				if (xbound - p->x < boundarydist) {
-					float dn = ((xbound - p->x) / boundarydist) * sim_interactionresolution;
+					dn = fmin(dn, ((xbound - p->x) / boundarydist));
 					if (xbound - p->x < 0)
 						dn = 0;
-					int di = (int)dn;
-					float df = dn - di;
-					p->dvx -= density*(forcetable[interactiontype][di] * (1.0f - df) + forcetable[interactiontype][di + 1] * df) / p->mass;
 				}
 				if (ybound - p->y < boundarydist) {
-					float dn = ((ybound - p->y) / boundarydist) * sim_interactionresolution;
+					dn = fmin(dn, ((ybound - p->y) / boundarydist));
 					if (ybound - p->y < 0)
 						dn = 0;
-					int di = (int)dn;
-					float df = dn - di;
-					p->dvy -= density*(forcetable[interactiontype][di] * (1.0f - df) + forcetable[interactiontype][di + 1] * df) / p->mass;
 				}
+
+
+				float boundaryforcex = 0.0;
+				float boundaryforcey = 0.0;
+				float disttoboundary = dn*boundarydist;
+				float bp =0.0f;
+				if (p->x < boundarydist*2) {
+					boundaryforcex += 0.2f*(bp * (1.0f-dn) + 5.0f * (flowvelocity - p->vx));
+				}
+				if (p->y < boundarydist) {
+					boundaryforcey += 0.2f*(bp * (1.0f - dn));
+				}
+				if (xbound - p->x < boundarydist) {
+					boundaryforcex += -0.2f*(bp * (1.0f - dn)) + 0.2f*5.0f * (flowvelocity - p->vx);
+				}
+				if (ybound - p->y < boundarydist) {
+					boundaryforcey += -0.2f*(bp * (1.0f - dn));
+				}
+
+				p->forcex += boundaryforcex;
+				p->forcex += boundaryforcey;
+				if (disttoboundary > EPSILON)
+					p->pressure += sqrt(boundaryforcex * boundaryforcex + boundaryforcey * boundaryforcey)/disttoboundary;
+
 
 				//if (p->material == sim_type_air)
 				//	p->dvy -= 0.2f;
 				//else
-				p->dvy -= gravity[p->material];
+				p->forcey -= gravity[p->material]*p->mass;
 
 				p = p->next;
 			}
@@ -291,7 +366,7 @@ void Simulation::test(int i) {
 void Simulation::update() {
 	instance->phys_1.start();
 
-	if (!instance->input->paused) {
+	if (!instance->input->paused || instance->input->nextframe) {
 		for (int i = 0; i < threads; i++) {
 			std::unique_lock<std::mutex> lck(mtx[i]);
 			ready[i] = true;
@@ -310,27 +385,67 @@ void Simulation::update() {
 	this->getInput();
 
 	instance->phys_2.start();
-	if (!instance->input->paused) {
+	if (!instance->input->paused || instance->input->nextframe) {
+		this->appBC();
+		stime += sim_timestep;
+
+		overallpressure = 0;
+		int nump = 1;
+
+		for (int x = 0; x < pressureXpoints; x++) {
+			for (int y = 0; y < pressureYpoints; y++) {
+				lpparticlecount[x][y] = 0;
+			}
+		}
+
+		for (int i = 0; i < objects.size(); i++) {
+			objects[i]->move();
+		}
+
 		for (int i = 0; i < particleid; i++) {
 			Particle *p = particles[i];
 			if (p->material != sim_type_barrier) {
-				p->vx += p->dvx*sim_timestep;
-				p->vy += p->dvy*sim_timestep;
+				p->vx += p->forcex/p->mass*sim_timestep;
+				p->vy += p->forcey/p->mass*sim_timestep;
 				p->x += p->vx*sim_timestep;
 				p->y += p->vy*sim_timestep;
 			}
-			p->dvx = 0;
-			p->dvy = 0;
+			p->forcex = 0;
+			p->forcey = 0;
 
 			if (p->x < 0.0f)
 				p->x = 0.0f;
 			if (p->x >= xbound)
-				p->x = xbound - 0.0001f;
+				p->x = xbound - EPSILON;
 			if (p->y < 0.0f)
 				p->y = 0.0f;
 			if (p->y >= ybound)
-				p->y = ybound - 0.0001f;
+				p->y = ybound - EPSILON;
 
+			if (p->deletionimminent == true) {
+				p->lifetime -= sim_timestep / maxlifespan;
+			}
+			else if (p->lifetime < 1.0f) {
+				p->lifetime += sim_timestep / maxlifespan;
+			}
+			if (p->lifetime > 1.0f) {
+				p->lifetime = 1.0f;
+			}
+
+			if (p->material == sim_type_air) {
+				float boundarydist = 2.0 * sim_interactiondistancemax;
+				if (p->x > boundarydist * 2 && p->y > boundarydist && xbound - p->x > boundarydist && ybound - p->y > boundarydist) {
+					overallpressure += p->pressure;
+					nump++;
+				}
+				int pnx = (int)(p->x / sim_width * pressureXpoints);
+				int pny = (int)(p->y / sim_height * pressureYpoints);
+				localpressure[pny][pnx] += p->pressure;
+				lpparticlecount[pnx][pny] ++;
+			}
+
+			p->avgpressure = p->avgpressure * 0.95f + p->pressure * 0.05f;
+			p->pressure = 0.0f;
 
 			int nx = (int)(p->x / sim_interactiondistancemax);
 			int ny = (int)(p->y / sim_interactiondistancemax);
@@ -352,11 +467,141 @@ void Simulation::update() {
 				p->prev = nullptr;
 			}
 		}
+		overallpressure /= (float)nump;
+		avgoverallpressure = avgoverallpressure * 0.98 + overallpressure * 0.02;
+
+
+		for (int x = 0; x < pressureXpoints; x++) {
+			for (int y = 0; y < pressureYpoints; y++) {
+				if (lpparticlecount[x][y] == 0) {
+					//localpressure[y][x] = 0;
+					//Do nothing
+				}
+				else {
+					localpressure[y][x] /= lpparticlecount[x][y];
+					localpressure[y][x] -= avgoverallpressure;
+					localpressure[y][x] = localpressure[y][x] * instance->gphx->pressurecontrast + 0.5f + instance->gphx->pressureoffset;
+				}
+				localpressureavg[y][x] = localpressureavg[y][x] * 0.98f + localpressure[y][x] * 0.02f;
+			}
+		}
 	}
 	instance->phys_2.end();
+
+	if (instance->input->nextframe)
+		instance->input->nextframe = false;
 }
 
+void Simulation::appBC() {
 
+	float cp = 35.0;
+	float wt_a = 1.0f;
+	float wt_b = 0.4f;
+	float wt_c = 2.0f;
+
+	float spacing = 1.5f;
+	float spacinga = spacing * 1.0f;
+	float spacingb = spacing * 1.5f;
+	float spacingc = spacing * 0.5f;
+
+	float offset = 2.5f;
+	for (float fy = 0.1; fy < ybound; fy += spacinga) {
+		tryAddParticle(offset + randFloat(spacinga) - spacinga/2.0f, fy + randFloat(spacinga) - spacinga/2.0f, spacinga, false, sim_type_air);
+	}
+	for (float fy = 0.1; fy < ybound; fy += spacingb) {
+		tryAddParticle(xbound - offset + randFloat(spacingb) - spacingb / 2.0f, fy + randFloat(spacingb) - spacingb / 2.0f, spacingb, false, sim_type_air);
+	}
+	for (float fx = 0.1; fx < xbound; fx += spacingc) {
+		tryAddParticle(fx + randFloat(spacingc) - spacingc / 2.0f, offset + randFloat(spacingc) - spacingc / 2.0f, spacingc, false, sim_type_air);
+	}
+	for (float fx = 0.1; fx < xbound; fx += spacingc) {
+		tryAddParticle(fx + randFloat(spacingc) - spacingc / 2.0f, ybound - offset + randFloat(spacingc) - spacingc / 2.0f, spacingc, false, sim_type_air);
+	}
+
+
+	for (int px = 0; px < sim_gridcolumns; px++)
+	{
+		for (int py = 0; py < sim_gridrows; py++)
+		{
+			Particle* p = grid[px][py];
+			while (p != nullptr) {
+				Particle* q = p;
+				p = p->next;
+				if (q->lifetime < 0)
+				{
+					deleteParticle(q->id);
+				}
+				else if (py >= sim_gridrows - 2 || py < 2) {
+					if (q->pressure > cp * wt_c)
+						q->deletionimminent = true;
+				}
+				else if (px >= sim_gridcolumns - 4)
+				{
+					if (q->pressure > cp * wt_b)
+						q->deletionimminent = true;
+				}
+				else if (px < 4)
+				{
+					if (q->pressure > cp * wt_a)
+						q->deletionimminent = true;
+				}
+			}
+		}
+	}
+
+	/*for (int px = sim_gridcolumns - 2; px < sim_gridcolumns; px++)
+	{
+		for (int py = 0; py < sim_gridrows; py++)
+		{
+			Particle* p = grid[px][py];
+			while (p != nullptr) {
+				Particle* q = p;
+				p = p->next;
+				if (q->pressure > cp*0.6)
+					deleteParticle(q->id);
+			}
+		}
+	}
+	for (int px = 0; px < 2; px++)
+	{
+		for (int py = 0; py < sim_gridrows; py++)
+		{
+			Particle* p = grid[px][py];
+			while (p != nullptr) {
+				Particle* q = p;
+				p = p->next;
+				if (q->pressure > cp)
+					deleteParticle(q->id);
+			}
+		}
+	}
+	for (int px = 0; px < sim_gridcolumns; px++)
+	{
+		for (int py = sim_gridrows - 2; py < sim_gridrows; py++)
+		{
+			Particle* p = grid[px][py];
+			while (p != nullptr) {
+				Particle* q = p;
+				p = p->next;
+				if (q->pressure > cp)
+					deleteParticle(q->id);
+			}
+		}
+	}
+	for (int px = 0; px < sim_gridcolumns; px++)
+	{
+		for (int py = 0; py < 2; py++)
+		{
+			Particle* p = grid[px][py];
+			while (p != nullptr) {
+				Particle* q = p;
+				p = p->next;
+				if (q->pressure > cp)
+					deleteParticle(q->id);
+			}
+		}
+	}*/
+}
 
 auto lastt = std::chrono::high_resolution_clock::now();
 
@@ -366,7 +611,7 @@ void Simulation::getInput() {
 	lastt = thist;
 
 	if (preset.drawing)
-		preset.genToilet();
+		preset.genAirfoil();
 
 	float mousex_f = instance->input->coordX;
 	float mousey_f = instance->input->coordY;
@@ -376,7 +621,7 @@ void Simulation::getInput() {
 
 	if (brushmode == mode_brush_move || brushmode == mode_brush_delete) {
 
-		if (instance->input->mouseDown) {
+		if (instance->input->mouseDownL || instance->input->mouseDownR && brushmode == mode_brush_delete) {
 
 			float vx = (mousex_f - mousex_i) / (float)time_span.count();
 			float vy = (mousey_f - mousey_i) / (float)time_span.count();
@@ -408,8 +653,8 @@ void Simulation::getInput() {
 								int di = (int)dn;
 								float df = dn - di;
 								float force = sim_mousestrength*(mousetable[di] * (1.0f - df) + mousetable[di + 1] * df) / xbound;
-								qtmp->dvx += vx*force;
-								qtmp->dvy += vy*force;
+								qtmp->forcex += vx*force*qtmp->mass;
+								qtmp->forcey += vy*force*qtmp->mass;
 							}
 							else if (brushmode == mode_brush_delete) {
 								deleteParticle(qtmp->id);
@@ -422,7 +667,9 @@ void Simulation::getInput() {
 	}
 	else if (brushmode == mode_brush_add || brushmode == mode_brush_replace) {
 
-		if (!mousedowntmp && instance->input->mouseDown) {
+		bool drawrigidobject = (instance->input->modematerial == sim_type_stone);
+
+		if (!mousedowntmp && instance->input->mouseDownL) {
 			mousexpp = mousex_f;
 			mouseypp = mousey_f;
 			mousexppp = mousex_f;
@@ -431,7 +678,17 @@ void Simulation::getInput() {
 			mouseypv = 0;
 			br_totlen = 0;
 			br_extralength_2 = 0;
+
+			if (drawrigidobject) {
+				objects.push_back(new Rigidbody);
+				objectid++;
+			}
 			//out << "[ress";
+		} else if (mousedowntmp && !instance->input->mouseDownL) {
+
+			if (drawrigidobject) {
+				objects[objectid - 1]->initializeUnconstrainedBody();
+			}
 		}
 
 		float ds = sqrt((mousex_f - mousex_i)*(mousex_f - mousex_i) + (mousey_f - mousey_i)*(mousey_f - mousey_i));
@@ -483,27 +740,30 @@ void Simulation::getInput() {
 			float tlf2 = tl2 - tli2;
 			
 			float critdistance = tolerance[instance->input->modematerial]*chradius;
-			if (instance->input->mouseDown == true && tli2>0 && dsp2>0) {
-				drawLine(mousexppp, mouseyppp, ux, uy, ox, oy, tli2, chdiameter, mousedist, critdistance, brushmode == mode_brush_replace, instance->input->modematerial, br_extralength_2);
+			if (instance->input->mouseDownL && tli2>0 && dsp2>0) {
+				if (drawrigidobject)
+					drawLine(mousexppp, mouseyppp, ux, uy, ox, oy, tli2, chdiameter, mousedist, critdistance, brushmode == mode_brush_replace, instance->input->modematerial, br_extralength_2, objectid - 1);
+				else
+					drawLine(mousexppp, mouseyppp, ux, uy, ox, oy, tli2, chdiameter, mousedist, critdistance, brushmode == mode_brush_replace, instance->input->modematerial, br_extralength_2, -1);
 			}
 
 
 			mousexppp = mousexpp;
 			mouseyppp = mouseypp;
-			if (!mousedowntmp && instance->input->mouseDown) {
+			if (!mousedowntmp && instance->input->mouseDownL) {
 				br_extralength_2 = 0;
 			}
 			else {
 				br_extralength_2 = tlf2;
 			}
 		}
-		if (!mousedowntmp && instance->input->mouseDown) {
+		if (!mousedowntmp && instance->input->mouseDownL) {
 			br_totlen = 0;
 		}
 		else {
 			br_totlen = fpart;
 		}
-		mousedowntmp = instance->input->mouseDown;
+		mousedowntmp = instance->input->mouseDownL;
 	}
 
 
@@ -571,10 +831,10 @@ void Simulation::fill() {
 
 	float critdistance = tolerance[sim_type_air] * chradius;
 
-	drawLine(x1, y1, ux, uy, ox, oy, tli2, chdiameter, mousedist, critdistance, false, material, 0.0f);
+	drawLine(x1, y1, ux, uy, ox, oy, tli2, chdiameter, mousedist, critdistance, false, material, 0.0f, -1);
 }
 
-void Simulation::drawLine(float xi, float yi, float ux, float uy, int ox, int oy, int tli2, float chdiameter, float mousedist, float critdistance, bool replace, int material, float exlen2) {
+void Simulation::drawLine(float xi, float yi, float ux, float uy, int ox, int oy, int tli2, float chdiameter, float mousedist, float critdistance, bool replace, int material, float exlen2, int objid) {
 	float costheta = 0.5;
 	float sintheta = sqrt(3.0f) / 2.0f;
 
@@ -616,7 +876,7 @@ void Simulation::drawLine(float xi, float yi, float ux, float uy, int ox, int oy
 								Particle *qtmp = q;
 								q = q->next;
 								if (distsq < critdistance) {
-									if (replace) {
+									if (replace || qtmp->material == sim_type_air) {
 										deleteParticle(qtmp->id);
 									}
 									else {
@@ -626,11 +886,48 @@ void Simulation::drawLine(float xi, float yi, float ux, float uy, int ox, int oy
 							}
 						}
 					}
-					if (canadd)
+					if (canadd) {
 						addParticle(fx, fy, 0.0f, 0.0f, material);
+						if (objid != -1) {
+							addParticleToRigidBody(particles[particleid - 1], objid);
+						}
+					}
 				}
 			}
 		}
+	}
+}
+
+
+void Simulation::tryAddParticle(float fx, float fy, float critdistance, bool replace, int material) {
+	if (fx > 0 && fy > 0 && fx < xbound && fy < ybound) {
+		int gxi = (int)(fx / sim_interactiondistancemax);
+		int gyi = (int)(fy / sim_interactiondistancemax);
+		float canadd = true;
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dy = -1; dy <= 1; dy++) {
+				int gx = gxi + dx;
+				int gy = gyi + dy;
+				if (gx < 0 || gy < 0 || gx >= sim_gridcolumns || gy >= sim_gridrows)
+					continue;
+				Particle* q = grid[gx][gy];
+				while (q != nullptr) {
+					float distsq = sqrt((q->x - fx) * (q->x - fx) + (q->y - fy) * (q->y - fy));
+					Particle* qtmp = q;
+					q = q->next;
+					if (distsq < critdistance) {
+						if (replace) {
+							deleteParticle(qtmp->id);
+						}
+						else {
+							canadd = false;
+						}
+					}
+				}
+			}
+		}
+		if (canadd)
+			addParticle(fx, fy, flowvelocity, 0.0f, material);
 	}
 }
 
@@ -641,6 +938,7 @@ void Simulation::addRandomParticle() {
 void Simulation::addParticle(float x, float y, float vx, float vy, int type) {
 	//oh shi
 	Particle *p = new Particle(x, y, vx, vy, particleid, type, masstable[type]);
+	//p->lifespan = randFloat(2.5f) + 1.0f;
 	particles.push_back(p);
 	//Particle newparticle(randFloat(xbound - 20.0f) + 10.0f, randFloat(ybound - 20.0f) + 10.0f, particleid);
 	//particles[particleid] = newparticle;
@@ -695,6 +993,11 @@ void Simulation::addParticle(float x, float y, float vx, float vy, int type) {
 
 void Simulation::deleteParticle(int id) {
 	Particle *p = particles[id];
+	Rigidbody* rb = nullptr;
+	if (p->rigidbodyid != -1)
+		rb = objects[p->rigidbodyid];
+	int index = p->rigidbodyindex;
+
 	if (p->prev != nullptr)
 		p->prev->next = p->next;
 	else
@@ -729,9 +1032,29 @@ void Simulation::deleteParticle(int id) {
 		g_colors.pop_back();
 	}
 
+	if (rb != nullptr) {
+		if (index < rb->numberofparticles - 1) {
+			rb->particles[index] = rb->particles[rb->numberofparticles - 1];
+			rb->coordinates[index] = rb->coordinates[rb->numberofparticles - 1];
+		}
+		rb->particles.pop_back();
+		rb->coordinates.pop_back();
+		rb->numberofparticles--;
+	}
+
 	particles.pop_back();
 	particleid--;
+
 	//todo update grid
+}
+
+void Simulation::addParticleToRigidBody(Particle* p, int rbid) {
+	p->rigidbodyid = rbid;
+	Rigidbody* object = objects[rbid];
+	p->rigidbodyindex = object->numberofparticles;
+	object->particles.push_back(p);
+	object->coordinates.push_back(Coord(0.0f, 0.0f));
+	object->numberofparticles++;
 }
 
 void Simulation::saveToFile(std::string name) {
@@ -784,4 +1107,10 @@ void Simulation::clear() {
 
 float Simulation::randFloat(float max) {
 	return static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / max));
+}
+
+float Simulation::randFloatNormal() {
+	float f = rngLUT[rngLUTindex];
+	rngLUTindex = (rngLUTindex + 1) % rngLUTsize;
+	return f;
 }

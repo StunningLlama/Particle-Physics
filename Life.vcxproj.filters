@@ -48,6 +48,9 @@
     <ClInclude Include="Preset.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Rigidbody.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -77,6 +80,9 @@
     <ClCompile Include="Preset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Rigidbody.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.fs">
@@ -89,6 +95,15 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="font.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaderp.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="background.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="background.vs">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
