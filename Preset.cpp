@@ -22,7 +22,7 @@ void Preset::startToilet() {
 void Preset::genToilet() {
 	Input *in = instance->input;
 	if (frame == 0) {
-		in->mouseDown = true;
+		in->mouseDownL = true;
 		in->coordX = cx + innerradius*cos(toRad(thetai));
 		in->coordY = cy + innerradius*sin(toRad(thetai));
 	}
@@ -41,10 +41,10 @@ void Preset::genToilet() {
 		in->coordY = py + uy * dist * frac;
 	}
 	else if (frame == 80) {
-		in->mouseDown = false;
+		in->mouseDownL = false;
 	}
 	else if (frame == 81) {
-		in->mouseDown = true;
+		in->mouseDownL = true;
 		in->coordX = cx + outerradius*cos(toRad(thetai));
 		in->coordY = cy + outerradius*sin(toRad(thetai));
 	}
@@ -64,7 +64,7 @@ void Preset::genToilet() {
 	}
 	else if (frame == 162) {
 		drawing = false;
-		in->mouseDown = false;
+		in->mouseDownL = false;
 		instance->input->updateMouse = true;
 	}
 	frame++;
@@ -84,12 +84,19 @@ void Preset::startAirfoil() {
 
 void Preset::genAirfoil() {
 	Input* in = instance->input;
+
+#ifdef BIG_CHUNGUS_SIZE
+	float centerx = 250.0f;
+	float centery = 250.0f;
+	float scale = 60.0f;
+#else
 	float centerx = 100.0f;
 	float centery = 130.0f;
 	float scale = 40.0f;
+#endif
 
 	if (frame == 0) {
-		in->mouseDown = true;
+		in->mouseDownL = true;
 		in->coordX = centerx + scale * xParam(0);
 		in->coordY = centery + scale * yParam(0);
 	}
@@ -100,7 +107,7 @@ void Preset::genAirfoil() {
 	}
 	else if (frame == 200) {
 		drawing = false;
-		in->mouseDown = false;
+		in->mouseDownL = false;
 		instance->input->updateMouse = true;
 	}
 	frame++;

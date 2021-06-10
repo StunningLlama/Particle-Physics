@@ -21,7 +21,7 @@ void Graphics::updatebuffer() {
 		instance->sim->g_dbglines[p->id * 4 + 2] = 2.0f*((p->gridx + 0.5f)*sim_interactiondistancemax) / sim_width - 1.0f;
 		instance->sim->g_dbglines[p->id * 4 + 3] = 2.0f*((p->gridy + 0.5f)*sim_interactiondistancemax) / sim_height - 1.0f;
 
-		float dp = (p->avgpressure - instance->sim->avgoverallpressure) * 0.25f + 0.5f;
+		float dp = (p->avgpressure - instance->sim->avgoverallpressure) * pressurecontrast + 0.5f + pressureoffset;
 		instance->sim->g_pressures[p->id * 4] = dp;
 		instance->sim->g_pressures[p->id * 4 + 1] = dp;
 		instance->sim->g_pressures[p->id * 4 + 2] = dp;
@@ -253,10 +253,19 @@ void keyboard(unsigned char code, int x, int y) {
 	instance->input->keyboard(code, x, y);
 }
 
+void special(int code, int x, int y) {
+	instance->input->special(code, x, y);
+}
+
 int Graphics::initializeGraphics() {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowSize(960, 960);
-	glutInitWindowPosition(100, 100);
+	if (sim_width / sim_height > ((float)glutGet(GLUT_SCREEN_WIDTH) / (float)glutGet(GLUT_SCREEN_HEIGHT))) {
+		glutInitWindowSize(glutGet(GLUT_SCREEN_WIDTH)*0.9, glutGet(GLUT_SCREEN_WIDTH) * sim_height / sim_width * 0.9);
+	}
+	else {
+		glutInitWindowSize(glutGet(GLUT_SCREEN_HEIGHT) * sim_width / sim_height * 0.9, glutGet(GLUT_SCREEN_HEIGHT) * 0.9);
+	}
+	glutInitWindowPosition(50, 50);
 	glutCreateWindow("Nöot nöot");
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
@@ -264,6 +273,7 @@ int Graphics::initializeGraphics() {
 	glutMotionFunc(mouseMotion);
 	glutPassiveMotionFunc(mousePassiveMotion);
 	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(special);
 
 	/*glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();

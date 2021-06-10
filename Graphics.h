@@ -16,6 +16,10 @@ public:
 
 	int bgmode = 0;
 
+	float pressurecontrast = 0.5;
+
+	float pressureoffset = 0.0;
+
 	float mat[3][3] = { {0.01f, 0.0f, 0.0f}, {0.0f, 0.01f, 0.0f}, {0.0f, 0.0f, 1.0f} };
 
 	void updatebuffer();

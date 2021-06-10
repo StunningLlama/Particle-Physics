@@ -13,8 +13,10 @@ public:
 		void mouseMotion(int x, int y);
 		void mousePassiveMotion(int x, int y);
 		void keyboard(unsigned char key, int x, int y);
+		void special(int key, int x, int y);
 
-		bool mouseDown = false;
+		bool mouseDownL = false;
+		bool mouseDownR = false;
 		bool updateMouse = true;
 		int mx = 0;
 		int my = 0;
