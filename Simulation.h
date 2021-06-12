@@ -9,7 +9,7 @@
 #include <condition_variable>
 #include <random>
 
-//#define BIG_CHUNGUS_SIZE
+#define BIG_CHUNGUS_SIZE
 
 #define sim_interactiondistancemax 7.5f
 #define sim_interactiondistmaxsq sim_interactiondistancemax*sim_interactiondistancemax
@@ -28,7 +28,7 @@
 #define sim_timestep 0.1f
 #define sim_diffstrength_vel_para 0.4f
 #define sim_diffstrength_vel_perp 0.4f
-#define sim_buoyancy 0.0f
+#define sim_buoyancy 0.4f
 #define sim_mousestrength 20.0f
 
 #define sim_materials 4
@@ -48,9 +48,9 @@
 #define sim_interaction_air_barrier 4
 #define sim_interaction_stone_barrier 5
 
-#define sim_forcestrength_water 8.0f
-#define sim_forcestrength_air 8.0f
-#define sim_forcestrength_stone 100.0f
+#define sim_boundary_walls 0
+#define sim_boundary_windtunnel 1
+#define sim_boundary_atmosphere 2
 
 #define rngLUTsize 10000
 
@@ -105,6 +105,7 @@ public:
 	float ybound = sim_gridrows*sim_interactiondistancemax;
 	float xsimarea = (sim_gridcolumns-2)*sim_interactiondistancemax;
 	float ysimarea = (sim_gridrows-2)*sim_interactiondistancemax;
+	int boundarytype = sim_boundary_walls;
 	float mousex_i = 0.0f, mousey_i = 0.0f, mousexpv = 0.0f, mouseypv = 0.0f, mousexpp = 0.0f, mouseypp = 0.0f, mousexppp = 0.0f, mouseyppp = 0.0f;
 	bool mousedowntmp = false;
 	float br_totlen = 0.0f;

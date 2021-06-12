@@ -1,34 +1,49 @@
-=== Wind Tunnel ===
+=== Particle physics ===
 
-Key Action
-A	Brush mode: Add
-R	Brush mode: Replace
-D	Brush mode: Delete
-M	Brush mode: Move (default)
+This is a particle based physics simulation written in C++ and rendered with OpenGL. Here is a list of things it can simulate:
+* Compressible gasses
+* Liquids
+* Rigid bodies
+* And more to come.
 
-W	Material: Water (default)
-N	Material: Air
-B	Material: Barrier
+=== Keybinds ===
 
-P	Pause
-S	Save from file
-L	Load from file
-C	Reset simulation
-F	Advance frame
+Key		Action
+A		Brush mode: Add
+R		Brush mode: Replace
+D		Brush mode: Delete
+M		Brush mode: Move (default)
+L Mouse	Draw
+R Mouse	Delete
 
-1	Brush size: 1
-2	Brush size: 2
-3	Brush size: 3 (default)
-4	Brush size: 4
-5	Brush size: 5
+W		Material: Water (default)
+N		Material: Air
+B		Material: Barrier
+S		Material: Stone
 
-9	Change background look (Blank/Pressure)
-0	Change particle look (Material/Pressure/Invisible)
+P		Pause
+CTRL-S	Save from file
+CTRL-O	Load from file
+C		Reset simulation
+F		Advance frame
+,		Change boundary condition [Wall/Wind tunnel]
+]		Increase flow velocity
+[		Decrease flow velocity
 
-+	Increase density
--	Decrease density
+1		Brush size: 1
+2		Brush size: 2
+3		Brush size: 3 (default)
+4		Brush size: 4
+5		Brush size: 5
 
-]	Increase flow velocity
-[	Decrease flow velocity
+~		Change background look [Blank/Pressure]
+TAB		Change particle look [Material/Pressure/Invisible]
+F5		Decrease pressure contrast
+F6		Increase pressure contrast
+F7		Decrease pressure brightness
+F8		Increase pressure brightness
 
-X	Special function 
++		Increase draw density
+-		Decrease draw density
+
+X		Special function 

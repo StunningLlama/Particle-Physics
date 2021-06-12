@@ -52,14 +52,14 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		modematerial = sim_type_air;
 	if (key == 'b')
 		modematerial = sim_type_barrier;
-	if (key == 'z')
+	if (key == 's')
 		modematerial = sim_type_stone;
 
 	if (key == 'p')
 		paused = !paused;
-	if (key == 's')
+	if (key == 's' && glutGetModifiers() == GLUT_ACTIVE_CTRL)
 		save = true;
-	if (key == 'l')
+	if (key == 'o' && glutGetModifiers() == GLUT_ACTIVE_CTRL)
 		load = true;
 	if (key == 'c')
 		clear = true;
@@ -80,9 +80,9 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		brushsize = 5;
 
 
-	if (key == '0')
+	if (key == '`')
 		instance->gphx->shadermode = (instance->gphx->shadermode + 1) % 3;
-	if (key == '9')
+	if (key == '\t')
 		instance->gphx->bgmode = (instance->gphx->bgmode + 1) % 2;
 
 	if (key == '=')
@@ -104,12 +104,12 @@ void Input::keyboard(unsigned char key, int x, int y) {
 
 
 void Input::special(int key, int x, int y) {
-	if (key == GLUT_KEY_F9)
+	if (key == GLUT_KEY_F5)
 		instance->gphx->pressurecontrast /= 1.1f;
-	if (key == GLUT_KEY_F10)
+	if (key == GLUT_KEY_F6)
 		instance->gphx->pressurecontrast *= 1.1f;
-	if (key == GLUT_KEY_F11)
+	if (key == GLUT_KEY_F7)
 		instance->gphx->pressureoffset -= 0.1f;
-	if (key == GLUT_KEY_F12)
+	if (key == GLUT_KEY_F8)
 		instance->gphx->pressureoffset += 0.1f;
 }

@@ -23,7 +23,9 @@ public:
 	float vy = 0.0f;
 	float omega = 0.0f;
 
+	bool physicsenabled = false;
 	bool fixed = false;
+	bool modified = false;
 	int numberofparticles = 0;
 
 	void initializeUnconstrainedBody();

@@ -9,9 +9,9 @@ Coord::Coord(float ix, float iy) {
 }
 
 void Rigidbody::initializeUnconstrainedBody() {
-	numberofparticles = particles.size();
 	float comX = 0.0f;
 	float comY = 0.0f;
+	this->mass = 0.0f;
 	for (int i = 0; i < numberofparticles; i++) {
 		Particle* p = particles[i];
 		comX += p->x * p->mass;
@@ -22,10 +22,14 @@ void Rigidbody::initializeUnconstrainedBody() {
 	comY /= this->mass;
 
 	initializeFixedAxisBody(comX, comY);
+	theta = 0.0f;
 	fixed = false;
+	physicsenabled = true;
+	modified = false;
 }
 
 void Rigidbody::initializeFixedAxisBody(float axisX, float axisY) {
+	moment = 0.0f;
 	for (int i = 0; i < numberofparticles; i++) {
 		Particle* p = particles[i];
 		float rx = p->x - axisX;
@@ -37,11 +41,17 @@ void Rigidbody::initializeFixedAxisBody(float axisX, float axisY) {
 
 	x = axisX;
 	y = axisY;
-	
+
+	theta = 0.0f;
 	fixed = true;
+	physicsenabled = true;
+	modified = false;
 }
 
 void Rigidbody::move() {
+	if (!physicsenabled)
+		return;
+
 	float netforcex = 0.0f;
 	float netforcey = 0.0f;
 	float torque = 0.0f;

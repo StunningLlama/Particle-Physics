@@ -1,0 +1,7 @@
+* Wave emitters
+* Powders
+* Explosion
+* Temperature
+* Plants
+* Electricity
+* Cloth
