@@ -14,9 +14,9 @@ void Preset::startToilet() {
 	instance->input->updateMouse = false;
 	instance->input->coordX = 0.0f;
 	instance->input->coordY = 0.0f;
-	instance->input->keyboard('b', 0, 0);
-	instance->input->keyboard('a', 0, 0);
-	instance->input->keyboard('1', 0, 0);
+	instance->input->modematerial = sim_type_barrier;
+	instance->input->modebrush = mode_brush_add;
+	instance->input->brushsize = 1;
 }
 
 void Preset::genToilet() {
@@ -77,9 +77,9 @@ void Preset::startAirfoil() {
 	instance->input->updateMouse = false;
 	instance->input->coordX = 0.0f;
 	instance->input->coordY = 0.0f;
-	instance->input->keyboard('b', 0, 0);
-	instance->input->keyboard('a', 0, 0);
-	instance->input->keyboard('1', 0, 0);
+	instance->input->modematerial = sim_type_barrier;
+	instance->input->modebrush = mode_brush_add;
+	instance->input->brushsize = 1;
 }
 
 void Preset::genAirfoil() {

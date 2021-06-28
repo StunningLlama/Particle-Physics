@@ -5,3 +5,6 @@
 * Plants
 * Electricity
 * Cloth
+* Elastic
+* Plastic
+* Brittle

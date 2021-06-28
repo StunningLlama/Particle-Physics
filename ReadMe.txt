@@ -16,10 +16,15 @@ M		Brush mode: Move (default)
 L Mouse	Draw
 R Mouse	Delete
 
-W		Material: Water (default)
-N		Material: Air
-B		Material: Barrier
-S		Material: Stone
+1		Material: Water (default)
+2		Material: Air
+3		Material: Barrier
+4		Material: Stone
+5		Material: Sand
+6		Material: Cloth
+7		Material: Rubber
+8		Material: Plastic
+9		Material: Ceramic
 
 P		Pause
 CTRL-S	Save from file
@@ -30,14 +35,12 @@ F		Advance frame
 ]		Increase flow velocity
 [		Decrease flow velocity
 
-1		Brush size: 1
-2		Brush size: 2
-3		Brush size: 3 (default)
-4		Brush size: 4
-5		Brush size: 5
+W		Increase brush size
+S		Decrease brush size
 
-~		Change background look [Blank/Pressure]
-TAB		Change particle look [Material/Pressure/Invisible]
+~		Change background apperance [Blank/Pressure]
+TAB		Change particle rendering mode [Material/Pressure/Invisible]
+/		Toggle bond visualization
 F5		Decrease pressure contrast
 F6		Increase pressure contrast
 F7		Decrease pressure brightness

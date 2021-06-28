@@ -45,21 +45,33 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		modebrush = mode_brush_delete;
 	if (key == 'm')
 		modebrush = mode_brush_move;
+	if (key == 'g')
+		modebrush = mode_brush_drag;
 
-	if (key == 'w')
+	if (key == '1')
 		modematerial = sim_type_water;
-	if (key == 'n')
+	if (key == '2')
 		modematerial = sim_type_air;
-	if (key == 'b')
+	if (key == '3')
 		modematerial = sim_type_barrier;
-	if (key == 's')
+	if (key == '4')
 		modematerial = sim_type_stone;
+	if (key == '5')
+		modematerial = sim_type_sand;
+	if (key == '6')
+		modematerial = sim_type_cloth;
+	if (key == '7')
+		modematerial = sim_type_elastic;
+	if (key == '8')
+		modematerial = sim_type_plastic;
+	if (key == '9')
+		modematerial = sim_type_brittle;
 
 	if (key == 'p')
 		paused = !paused;
-	if (key == 's' && glutGetModifiers() == GLUT_ACTIVE_CTRL)
+	if (key == 0x13)
 		save = true;
-	if (key == 'o' && glutGetModifiers() == GLUT_ACTIVE_CTRL)
+	if (key == 0x17)
 		load = true;
 	if (key == 'c')
 		clear = true;
@@ -68,27 +80,23 @@ void Input::keyboard(unsigned char key, int x, int y) {
 	if (key == 'x')
 		specialfunc = true;
 
-	if (key == '1')
-		brushsize = 1;
-	if (key == '2')
-		brushsize = 2;
-	if (key == '3')
-		brushsize = 3;
-	if (key == '4')
-		brushsize = 4;
-	if (key == '5')
-		brushsize = 5;
+	if (key == 'w')
+		brushsize = clamp(brushsize + 1, 1, 5);
+	if (key == 's')
+		brushsize = clamp(brushsize - 1, 1, 5);
 
 
 	if (key == '`')
 		instance->gphx->shadermode = (instance->gphx->shadermode + 1) % 3;
 	if (key == '\t')
 		instance->gphx->bgmode = (instance->gphx->bgmode + 1) % 2;
+	if (key == '/')
+		instance->gphx->displaybonds = !instance->gphx->displaybonds;
 
 	if (key == '=')
-		density++;
+		density = clamp(density + 1, 0, 5);
 	if (key == '-')
-		density--;
+		density = clamp(density - 1, 0, 5);
 
 
 	if (key == ']')
@@ -96,10 +104,8 @@ void Input::keyboard(unsigned char key, int x, int y) {
 	if (key == '[')
 		instance->sim->flowvelocity /= 1.05f;
 
-	if (density < 0)
-		density = 0;
-	if (density > 5)
-		density = 5;
+	if (key == ',')
+		instance->sim->boundarytype = (instance->sim->boundarytype + 1) % 2;
 }
 
 
@@ -112,4 +118,12 @@ void Input::special(int key, int x, int y) {
 		instance->gphx->pressureoffset -= 0.1f;
 	if (key == GLUT_KEY_F8)
 		instance->gphx->pressureoffset += 0.1f;
+}
+
+int Input::clamp(int x, int min, int max) {
+	if (x < min)
+		return min;
+	if (x > max)
+		return max;
+	return x;
 }

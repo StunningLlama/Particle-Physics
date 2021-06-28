@@ -52,6 +52,9 @@
     <ClInclude Include="Rigidbody.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Bond.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -84,6 +87,9 @@
     <ClCompile Include="Rigidbody.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Bond.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.fs">
@@ -105,6 +111,12 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="background.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="bond.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="bond.fs">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

@@ -8,24 +8,27 @@
 void Graphics::updatebuffer() {
 
 	for (Particle *p : instance->sim->particles) {
-		instance->sim->g_coords[p->id * 8] = p->x - instance->sim->drawradius[p->material];
-		instance->sim->g_coords[p->id * 8 + 1] = p->y - instance->sim->drawradius[p->material];
-		instance->sim->g_coords[p->id * 8 + 2] = p->x - instance->sim->drawradius[p->material];
-		instance->sim->g_coords[p->id * 8 + 3] = p->y + instance->sim->drawradius[p->material];
-		instance->sim->g_coords[p->id * 8 + 4] = p->x + instance->sim->drawradius[p->material];
-		instance->sim->g_coords[p->id * 8 + 5] = p->y + instance->sim->drawradius[p->material];
-		instance->sim->g_coords[p->id * 8 + 6] = p->x + instance->sim->drawradius[p->material];
-		instance->sim->g_coords[p->id * 8 + 7] = p->y - instance->sim->drawradius[p->material];
-		instance->sim->g_dbglines[p->id * 4] = instance->sim->g_coords[p->id * 2];
-		instance->sim->g_dbglines[p->id * 4 + 1] = instance->sim->g_coords[p->id * 2 + 1];
-		instance->sim->g_dbglines[p->id * 4 + 2] = 2.0f*((p->gridx + 0.5f)*sim_interactiondistancemax) / sim_width - 1.0f;
-		instance->sim->g_dbglines[p->id * 4 + 3] = 2.0f*((p->gridy + 0.5f)*sim_interactiondistancemax) / sim_height - 1.0f;
+		instance->sim->g_coords[p->id * 8] = p->x - instance->sim->drawradius[p->material]*p->size;
+		instance->sim->g_coords[p->id * 8 + 1] = p->y - instance->sim->drawradius[p->material]*p->size;
+		instance->sim->g_coords[p->id * 8 + 2] = p->x - instance->sim->drawradius[p->material]*p->size;
+		instance->sim->g_coords[p->id * 8 + 3] = p->y + instance->sim->drawradius[p->material]*p->size;
+		instance->sim->g_coords[p->id * 8 + 4] = p->x + instance->sim->drawradius[p->material]*p->size;
+		instance->sim->g_coords[p->id * 8 + 5] = p->y + instance->sim->drawradius[p->material]*p->size;
+		instance->sim->g_coords[p->id * 8 + 6] = p->x + instance->sim->drawradius[p->material]*p->size;
+		instance->sim->g_coords[p->id * 8 + 7] = p->y - instance->sim->drawradius[p->material]*p->size;
 
 		float dp = (p->avgpressure - instance->sim->avgoverallpressure) * pressurecontrast + 0.5f + pressureoffset;
 		instance->sim->g_pressures[p->id * 4] = dp;
 		instance->sim->g_pressures[p->id * 4 + 1] = dp;
 		instance->sim->g_pressures[p->id * 4 + 2] = dp;
 		instance->sim->g_pressures[p->id * 4 + 3] = dp;
+	}
+
+	for (Bond* b : instance->sim->bonds) {
+		instance->sim->g_bonds[b->bondindex * 4] = b->particleA->x;
+		instance->sim->g_bonds[b->bondindex * 4 + 1] = b->particleA->y;
+		instance->sim->g_bonds[b->bondindex * 4 + 2] = b->particleB->x;
+		instance->sim->g_bonds[b->bondindex * 4 + 3] = b->particleB->y;
 	}
 
 	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0); 
@@ -40,7 +43,7 @@ void Graphics::updatebuffer() {
 
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBOd);
-	glBufferData(GL_ARRAY_BUFFER, instance->sim->g_dbglines.size()*sizeof(float), &instance->sim->g_dbglines[0], GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, instance->sim->g_bonds.size()*sizeof(float), &instance->sim->g_bonds[0], GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBOp);
 	glBufferData(GL_ARRAY_BUFFER, instance->sim->g_pressures.size()*sizeof(float), &instance->sim->g_pressures[0], GL_DYNAMIC_DRAW);
@@ -87,6 +90,18 @@ void Graphics::display() {
 		glUseProgram(0);
 	}
 
+
+	if (displaybonds) {
+		glUseProgram(bondShader);
+		glUniformMatrix3fv(gTransform4, 1, GL_FALSE, &mat[0][0]);
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, VBOd);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glDrawArrays(GL_LINES, 0, 2 * instance->sim->bonds.size());
+		glDisableVertexAttribArray(0);
+	}
+
+
 	if (shadermode == 1) {
 		glUseProgram(particleShaderNormal);
 		glUniformMatrix3fv(gTransform, 1, GL_FALSE, &mat[0][0]);
@@ -124,6 +139,7 @@ void Graphics::display() {
 		glUseProgram(0);
 	}
 
+
 	glUseProgram(fontShader);
 
 	glUniform3f(gFontColor, 0.5f, 0.0f, 0.0f);
@@ -131,7 +147,7 @@ void Graphics::display() {
 	glUniformMatrix3fv(gTransform2, 1, GL_FALSE, &mat[0][0]);
 
 	font.RenderText(fontShader, instance->input->brushnames[instance->input->modebrush], instance->sim->xbound - 1.0f, instance->sim->ybound - 5.0f, 0.1f, true);
-	font.RenderText(fontShader, instance->input->materialnames[instance->input->modematerial], instance->sim->xbound - 1.0f, instance->sim->ybound - 10.0f, 0.1f, true);
+	font.RenderText(fontShader, instance->sim->materialnames[instance->input->modematerial], instance->sim->xbound - 1.0f, instance->sim->ybound - 10.0f, 0.1f, true);
 	font.RenderText(fontShader, instance->input->sizenames[instance->input->brushsize-1], instance->sim->xbound - 1.0f, instance->sim->ybound - 15.0f, 0.1f, true);
 	font.RenderText(fontShader, instance->input->densitynames[instance->input->density - 1], instance->sim->xbound - 1.0f, instance->sim->ybound - 20.0f, 0.1f, true);
 	font.RenderText(fontShader, "Particles: " + std::to_string(instance->sim->particleid), 1.0f, instance->sim->ybound - 5.0f, 0.1f, false);
@@ -139,12 +155,6 @@ void Graphics::display() {
 	if (instance->input->paused)
 		font.RenderText(fontShader, "Paused", 1.0f, instance->sim->ybound - 15.0f, 0.1f, false);
 	glUseProgram(0);
-
-	/*glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, VBOd);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glDrawArrays(GL_LINES, 0, 2*instance->sim->particles.size());
-	glDisableVertexAttribArray(0);*/
 
 	glutSwapBuffers();
 	instance->graphics_1.end();
@@ -319,6 +329,8 @@ int Graphics::initializeGraphics() {
 	gFontColor = glGetUniformLocation(fontShader, "textColor");
 	CompileShaders(backgroundShader, vsBackground, fsBackground);
 	gTexture = glGetUniformLocation(backgroundShader, "BGtexture");
+	CompileShaders(bondShader, bVSFileName, bFSFileName);
+	gTransform4 = glGetUniformLocation(bondShader, "transform");
 	//std::cout << gTransform2 << std::endl;
 	std::cout << gFontColor << std::endl;
 	//std::cout << glGetUniformLocation(fontShader, "text") << std::endl;

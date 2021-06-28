@@ -151,6 +151,7 @@
     <Text Include="Todo.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bond.h" />
     <ClInclude Include="Font.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Input.h" />
@@ -164,6 +165,7 @@
     <ClInclude Include="Timer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bond.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="Input.cpp" />
@@ -183,6 +185,8 @@
   <ItemGroup>
     <None Include="background.fs" />
     <None Include="background.vs" />
+    <None Include="bond.fs" />
+    <None Include="bond.vs" />
     <None Include="font.fs" />
     <None Include="font.vs" />
     <None Include="shader.fs" />
