@@ -9,10 +9,11 @@ This is a particle based physics simulation written in C++ and rendered with Ope
 === Keybinds ===
 
 Key		Action
-A		Brush mode: Add
+A		Brush mode: Add (default)
 R		Brush mode: Replace
 D		Brush mode: Delete
-M		Brush mode: Move (default)
+M		Brush mode: Move
+Q		Brush mode: Grab
 L Mouse	Draw
 R Mouse	Delete
 
@@ -34,6 +35,7 @@ F		Advance frame
 ,		Change boundary condition [Wall/Wind tunnel]
 ]		Increase flow velocity
 [		Decrease flow velocity
+G		Gravity on/off
 
 W		Increase brush size
 S		Decrease brush size

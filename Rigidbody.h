@@ -13,6 +13,16 @@ public:
 	std::vector<Particle*> particles;
 	std::vector<Coord> coordinates;
 
+	/*EXPERIMENTAL, todo: make compatible with deletion*/
+	std::vector<Bond*> internalbonds;
+	int numberofbonds = 0;
+	bool brittle = false;
+	float ax = 0.0f;
+	float ay = 0.0f;
+	float alpha = 0.0f;
+	void computeStresses();
+	void floodFill(Particle* p, int newRigidbodyId);
+
 	float mass = 0.0f;
 	float moment = 0.0f;
 

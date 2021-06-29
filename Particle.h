@@ -24,11 +24,9 @@ public:
 	float mass = 1.0f;
 	float pressure = 0.0f;
 	float avgpressure = 0.0f;
-	int gridx = 0;
-	int gridy = 0;
-	int strokenumber = 0;
 	int id = 0;
 	int material = 0;
+	int strokenumber = 0;
 	bool fixed = false;
 
 	/*Air only*/
@@ -42,9 +40,18 @@ public:
 	int rigidbodyid = -1;
 	int rigidbodyindex = -1;
 
+	/*EXPERIMENTAL*/
+	float max = 0.0f;
+	float may = 0.0f;
+	float minquantityx = 0.0f;
+	float minquantityy = 0.0f;
+	bool traversed = false;
+
 	std::vector<Bond*> bonds;
 	int numberofbonds = 0;
 
+	int gridx = 0;
+	int gridy = 0;
 	Particle *prev = nullptr;
 	Particle *next = nullptr;
 	//std::vector<Force> *forces;

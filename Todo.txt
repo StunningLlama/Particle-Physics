@@ -4,7 +4,7 @@
 * Temperature
 * Plants
 * Electricity
-* Cloth
-* Elastic
+* Cloth [done]
+* Elastic [done]
 * Plastic
-* Brittle
+* Brittle [done]

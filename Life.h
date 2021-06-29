@@ -17,6 +17,8 @@ public:
 	Timer phys_1;
 	Timer phys_2;
 	Timer graphics_1;
+
+	bool timerenabled = false;
 };
 
 extern Life *instance;

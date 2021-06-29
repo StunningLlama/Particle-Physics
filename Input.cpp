@@ -45,7 +45,7 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		modebrush = mode_brush_delete;
 	if (key == 'm')
 		modebrush = mode_brush_move;
-	if (key == 'g')
+	if (key == 'q')
 		modebrush = mode_brush_drag;
 
 	if (key == '1')
@@ -77,6 +77,8 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		clear = true;
 	if (key == 'f')
 		nextframe = true;
+	if (key == 'g')
+		instance->sim->enablegravity = !instance->sim->enablegravity;
 	if (key == 'x')
 		specialfunc = true;
 

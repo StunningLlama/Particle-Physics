@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Timer.h"
+#include "Life.h"
 #include <iostream>
 
 Timer::Timer(char *name) {
@@ -17,7 +18,8 @@ void Timer::end() {
 	marks++;
 	if (marks == 50) {
 		std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(tot / 50);
-		std::cout << time_span.count()*1000000.0 << " microseconds for function " << functionname << std::endl;
+		if (instance->timerenabled)
+			std::cout << time_span.count()*1000000.0 << " microseconds for function " << functionname << std::endl;
 		marks = 0;
 		tot = std::chrono::high_resolution_clock::duration::zero();
 	}

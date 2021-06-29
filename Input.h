@@ -32,9 +32,9 @@ public:
 		bool clear = false;
 		bool nextframe = false;
 		bool specialfunc = false;
-		int modebrush = mode_brush_move;
+		int modebrush = mode_brush_add;
 		int modematerial = sim_type_water;
-		int brushsize = 3;
+		int brushsize = 1;
 		int density = 3;
 
 		float densitytable[5] = {2.0f, 1.5f, 1.0f, 0.75, 0.5f};

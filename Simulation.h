@@ -44,7 +44,7 @@
 #define sim_type_plastic 7
 #define sim_type_brittle 8
 
-#define sim_interactions 9
+#define sim_interactions 10
 
 #define sim_interaction_none -1
 #define sim_interaction_water_water 0
@@ -56,6 +56,7 @@
 #define sim_interaction_sand_sand 6
 #define sim_interaction_solid_solid 7
 #define sim_interaction_cloth_cloth 8
+#define sim_interaction_brittle_brittle 9
 
 //shorthand names
 #define si_nointr -1
@@ -68,6 +69,7 @@
 #define si_sndsnd 6
 #define si_solsol 7
 #define si_cloclo 8
+#define si_btlbtl 9
 
 #define sim_bonds 5
 #define sim_bond_none -1
@@ -76,7 +78,6 @@
 #define sim_bond_plastic 2
 #define sim_bond_brittle 3
 #define sim_bond_friction 4
-
 
 #define sim_boundary_walls 0
 #define sim_boundary_windtunnel 1
@@ -101,8 +102,11 @@ public:
 	void addParticle(float x, float y, float vx, float vy, int type);
 	void deleteParticle(int id);
 	void addParticleToRigidBody(Particle* p, int rbid);
+	void removeParticleFromRigidBody(Particle* p);
 	void addBond(Particle* p, Particle* q, int bondtype, float length);
 	void deleteBond(Particle* p, Particle* q);
+	void addBondToRigidBody(Bond* b, int rbid);
+	void removeBondFromRigidBody(Bond* p);
 	void attachToNearbyParticles(Particle* p, int bondtype, float radius, bool respectbrushstroke);
 	void clear();
 	void Simulation::test(int i);
@@ -137,7 +141,7 @@ public:
 		/*Elastic*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_cloclo,	si_solsol,	si_solsol},
 		/*Cloth*/	{si_wtrbar,	si_airbar,	si_cloclo,	si_cloclo,	si_cloclo,	si_cloclo,	si_cloclo,	si_cloclo,	si_cloclo},
 		/*Plastic*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_cloclo,	si_solsol,	si_solsol},
-		/*Brittle*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_cloclo,	si_solsol,	si_solsol}
+		/*Brittle*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_cloclo,	si_solsol,	si_btlbtl}
 	};
 
 	float bondforcetable[sim_bonds][sim_bondinteractionresolution + 1];
@@ -165,7 +169,7 @@ public:
 	float localpressureavg[pressureYpoints][pressureXpoints] = { 1.0 };
 	float lpparticlecount[pressureXpoints][pressureYpoints] = { 1 };
 
-	const char* materialnames[sim_materials] =		{ "Water",			"Air",				"Barrier",			"Stone",			"Sand",				"Rubber",			"Cloth",			"Plastic",			"Ceramic"			};
+	const char* materialnames[sim_materials] =		{ "Water",			"Air",				"Barrier",			"Stone",			"Sand",				"Rubber",			"Cloth",			"Clay",				"Glass"				};
 	unsigned char colortable[sim_materials][3] =	{ {0, 127, 255},	{127, 180, 196},	{127, 63, 0},		{127, 127, 127},	{196, 196, 127},	{191, 58, 17},		{235, 167, 84},		{164, 175, 222},	{192, 186, 219}		};
 	float masstable[sim_materials] =				{ 1.0f,				0.2f,				1.0f,				1.0f,				1.0f,				0.8,				0.6,				0.7,				1.0					};
 	float characteristicradius[sim_materials] =		{ 7.5f*0.5f,		7.5f*0.4f,			7.5f*0.3f,			7.5f * 0.3f,		7.5f * 0.5f,		7.5f * 0.4f,		7.5f * 0.4f,		7.5f * 0.4f,		7.5f * 0.4f,		};
@@ -173,12 +177,14 @@ public:
 	float tolerance[sim_materials] =				{ 1.4f,				1.4f,				1.32f,				1.32f,				1.32f,				1.32f,				1.32f,				1.32f,				1.32f				};
 	float gravity[sim_materials] =					{ 0.98f,			0.0f,				0.0f,				0.98f,				0.98f,				0.98f,				0.98f,				0.98f,				0.98f,				};
 	int defaultbonds[sim_materials] =				{ sim_bond_none,	sim_bond_none,		sim_bond_none,		sim_bond_none,		sim_bond_none,		sim_bond_elastic,	sim_bond_cloth,		sim_bond_plastic,	sim_bond_brittle	};
+	bool rigidmaterial[sim_materials] =				{ false,			false,				false,				true,				false,				false,				false,				false,				true				};
 
 	Particle* grid[sim_gridcolumns][sim_gridrows];
 	std::vector<Particle*> particles;
 	std::vector<Rigidbody*> objects;
 	std::vector<Bond*> bonds;
 	int objectid = 0;
+	bool enablegravity = true;
 	//Particle particles[10000];
 	std::thread *threadarray;
 	std::vector<float> g_coords;

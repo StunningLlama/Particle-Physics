@@ -38,7 +38,7 @@ int Life::start(int argc, char** argv) {
 	glutDisplayFunc(loop);
 	glutIdleFunc(loop);
 
-	sim->preset.startAirfoil();
+	//sim->preset.startAirfoil();
 	instance->input->paused = true;
 
 	glutMainLoop();
