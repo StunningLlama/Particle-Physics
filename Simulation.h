@@ -44,7 +44,7 @@
 #define sim_type_plastic 7
 #define sim_type_brittle 8
 
-#define sim_interactions 10
+#define sim_interactions 11
 
 #define sim_interaction_none -1
 #define sim_interaction_water_water 0
@@ -57,6 +57,7 @@
 #define sim_interaction_solid_solid 7
 #define sim_interaction_cloth_cloth 8
 #define sim_interaction_brittle_brittle 9
+#define sim_interaction_clay_clay 10
 
 //shorthand names
 #define si_nointr -1
@@ -70,6 +71,7 @@
 #define si_solsol 7
 #define si_cloclo 8
 #define si_btlbtl 9
+#define si_clycly 10
 
 #define sim_bonds 5
 #define sim_bond_none -1
@@ -90,23 +92,41 @@
 
 #define EPSILON 0.0001f
 
+
+struct BondParams {
+	BondParams(Particle* p, Particle* q, int bondtype, float bondlength);
+	Particle* p;
+	Particle* q;
+	int bondtype;
+	float length;
+};
 class Simulation {
 public:
 	Simulation();
 
 	void update();
 	void applyPhys(int start, int end, int ind);
+	void applyWindTunnelBC();
 	void tryAddParticle(float fx, float fy, float critdistance, bool replace, int material);
 	void addRandomParticle();
-	void appBC();
-	void addParticle(float x, float y, float vx, float vy, int type);
-	void deleteParticle(int id);
-	void addParticleToRigidBody(Particle* p, int rbid);
+
+	/*Not for use in multithreaded locations (ie. applyPhys)*/
+
+	Particle* addParticle(float x, float y, float vx, float vy, int type);
+	void deleteParticle(Particle* p);
+
+	void addParticleToRigidBody(Particle* p, Rigidbody* rb);
 	void removeParticleFromRigidBody(Particle* p);
-	void addBond(Particle* p, Particle* q, int bondtype, float length);
+
+	Rigidbody* addRigidBody(bool brittle);
+	void deleteRigidBody(Rigidbody* r);
+
+	Bond* addBond(Particle* p, Particle* q, int bondtype, float length);
 	void deleteBond(Particle* p, Particle* q);
-	void addBondToRigidBody(Bond* b, int rbid);
+
+	void addBondToRigidBody(Bond* b, Rigidbody* rb);
 	void removeBondFromRigidBody(Bond* p);
+
 	void attachToNearbyParticles(Particle* p, int bondtype, float radius, bool respectbrushstroke);
 	void clear();
 	void Simulation::test(int i);
@@ -118,12 +138,11 @@ public:
 	void loadFromFile(std::string name);
 	void drawLine(float xi, float yi, float ux, float uy, int ox, int oy, int tli2, float chdiameter, float mousedist, float critdistance, bool replace, int material, float exlen2, int objid, int bondtype);
 	void fill();
+	void updatePlasticBond(Bond* b, float distance);
 
 	void setPhysicsParameters();
 
-	int particleid;
-	int bondid;
-
+	/* Interactions */
 	float forcetable[sim_interactions][sim_interactionresolution + 1];
 	float potentialtable[sim_interactions][sim_interactionresolution + 1];
 	float diffusiontable[sim_interactions][sim_interactionresolution + 1];
@@ -135,20 +154,33 @@ public:
 					/*Water		Air			Barrier		Stone		Sand		Elastic		Cloth		Plastic		Brittle*/
 		/*Water*/	{si_wtrwtr,	si_wtrair,	si_wtrbar,	si_wtrbar,	si_sndsnd,	si_wtrbar,	si_wtrbar,	si_wtrbar,	si_wtrbar},
 		/*Air*/		{si_wtrair,	si_airair,	si_airbar,	si_airbar,	si_sndsnd,	si_airbar,	si_airbar,	si_airbar,	si_airbar},
-		/*Barrier*/	{si_wtrbar,	si_airbar,	si_nointr,	si_stnbar,	si_sndsnd,	si_solsol,	si_cloclo,	si_solsol,	si_solsol},
-		/*Stone*/	{si_wtrbar,	si_airbar,	si_stnbar,	si_stnbar,	si_sndsnd,	si_solsol,	si_cloclo,	si_solsol,	si_solsol},
-		/*Sand*/	{si_sndsnd,	si_sndsnd,	si_sndsnd,	si_sndsnd,	si_sndsnd,	si_solsol,	si_cloclo,	si_solsol,	si_solsol},
-		/*Elastic*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_cloclo,	si_solsol,	si_solsol},
-		/*Cloth*/	{si_wtrbar,	si_airbar,	si_cloclo,	si_cloclo,	si_cloclo,	si_cloclo,	si_cloclo,	si_cloclo,	si_cloclo},
-		/*Plastic*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_cloclo,	si_solsol,	si_solsol},
-		/*Brittle*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_cloclo,	si_solsol,	si_btlbtl}
+		/*Barrier*/	{si_wtrbar,	si_airbar,	si_nointr,	si_stnbar,	si_sndsnd,	si_solsol,	si_solsol,	si_solsol,	si_solsol},
+		/*Stone*/	{si_wtrbar,	si_airbar,	si_stnbar,	si_stnbar,	si_sndsnd,	si_solsol,	si_solsol,	si_solsol,	si_solsol},
+		/*Sand*/	{si_sndsnd,	si_sndsnd,	si_sndsnd,	si_sndsnd,	si_sndsnd,	si_solsol,	si_solsol,	si_solsol,	si_solsol},
+		/*Elastic*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_solsol},
+		/*Cloth*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_cloclo,	si_solsol,	si_solsol},
+		/*Plastic*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_clycly,	si_solsol},
+		/*Brittle*/	{si_wtrbar,	si_airbar,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_solsol,	si_btlbtl}
 	};
 
+	/* Bonds */
 	float bondforcetable[sim_bonds][sim_bondinteractionresolution + 1];
 	float bondfrictiontable[sim_bonds];
 	float bondinteractiondists[sim_bonds];
 	float bondequilibriumlengths[sim_bonds];
 
+	/* Materials */
+	const char* materialnames[sim_materials] =	    { "Water",			"Air",				"Barrier",			"Stone",			"Sand",				"Rubber",			"Cloth",			"Clay",				"Glass"			};
+	unsigned char colortable[sim_materials][3] =    { {0, 127, 255},	{127, 180, 196},	{127, 63, 0},		{127, 127, 127},	{196, 196, 127},	{191, 58, 17},		{235, 167, 84},		{164, 175, 222},	{192, 186, 219} };
+	float masstable[sim_materials] =                { 1.0f,				0.2f,				1.0f,				1.0f,				1.0f,				0.8,				0.6,				0.8,				1.0				};
+	float characteristicradius[sim_materials] =     { 7.5f * 0.5f,		7.5f * 0.4f,		7.5f * 0.3f,		7.5f * 0.3f,		7.5f * 0.5f,		7.5f * 0.4f,		7.5f * 0.4f,		7.5f * 0.4f,		7.5f * 0.4f,	};
+	float drawradius[sim_materials] =               { 7.5f,				7.5f,				7.5f,				7.5f,				7.5f,				7.5f,				7.5f,				7.5f,				7.5f,			};
+	float tolerance[sim_materials] =                { 1.4f,				1.4f,				1.32f,				1.32f,				1.32f,				1.32f,				1.32f,				1.32f,				1.32f			};
+	float gravity[sim_materials] =                  { 0.98f,			0.0f,				0.0f,				0.98f,				0.98f,				0.98f,				0.98f,				0.98f,				0.98f,			};
+	int defaultbonds[sim_materials] =               { sim_bond_none,	sim_bond_none,		sim_bond_none,		sim_bond_none,		sim_bond_none,		sim_bond_elastic,	sim_bond_cloth,		sim_bond_plastic,	sim_bond_brittle };
+	bool rigidmaterial[sim_materials] =             { false,			false,				false,				true,				false,				false,				false,				false,				true			};
+
+	/* Misc */
 	float mousetable[sim_interactionresolution + 1];
 	float xbound = sim_gridcolumns*sim_interactiondistancemax;
 	float ybound = sim_gridrows*sim_interactiondistancemax;
@@ -165,28 +197,23 @@ public:
 	float overallpressure = 0.0f;
 	float avgoverallpressure = 0.0f;
 	float maxlifespan = 1.0;
+	bool enablegravity = true;
 	float localpressure[pressureYpoints][pressureXpoints] = { 1.0 };
 	float localpressureavg[pressureYpoints][pressureXpoints] = { 1.0 };
 	float lpparticlecount[pressureXpoints][pressureYpoints] = { 1 };
 
-	const char* materialnames[sim_materials] =		{ "Water",			"Air",				"Barrier",			"Stone",			"Sand",				"Rubber",			"Cloth",			"Clay",				"Glass"				};
-	unsigned char colortable[sim_materials][3] =	{ {0, 127, 255},	{127, 180, 196},	{127, 63, 0},		{127, 127, 127},	{196, 196, 127},	{191, 58, 17},		{235, 167, 84},		{164, 175, 222},	{192, 186, 219}		};
-	float masstable[sim_materials] =				{ 1.0f,				0.2f,				1.0f,				1.0f,				1.0f,				0.8,				0.6,				0.7,				1.0					};
-	float characteristicradius[sim_materials] =		{ 7.5f*0.5f,		7.5f*0.4f,			7.5f*0.3f,			7.5f * 0.3f,		7.5f * 0.5f,		7.5f * 0.4f,		7.5f * 0.4f,		7.5f * 0.4f,		7.5f * 0.4f,		};
-	float drawradius[sim_materials] =				{ 7.5f,				7.5f,				7.5f,				7.5f,				7.5f,				7.5f,				7.5f,				7.5f,				7.5f,				};
-	float tolerance[sim_materials] =				{ 1.4f,				1.4f,				1.32f,				1.32f,				1.32f,				1.32f,				1.32f,				1.32f,				1.32f				};
-	float gravity[sim_materials] =					{ 0.98f,			0.0f,				0.0f,				0.98f,				0.98f,				0.98f,				0.98f,				0.98f,				0.98f,				};
-	int defaultbonds[sim_materials] =				{ sim_bond_none,	sim_bond_none,		sim_bond_none,		sim_bond_none,		sim_bond_none,		sim_bond_elastic,	sim_bond_cloth,		sim_bond_plastic,	sim_bond_brittle	};
-	bool rigidmaterial[sim_materials] =				{ false,			false,				false,				true,				false,				false,				false,				false,				true				};
-
+	/* Data */
 	Particle* grid[sim_gridcolumns][sim_gridrows];
+	int particleid;
+	int bondid;
+	int objectid = 0;
 	std::vector<Particle*> particles;
 	std::vector<Rigidbody*> objects;
 	std::vector<Bond*> bonds;
-	int objectid = 0;
-	bool enablegravity = true;
-	//Particle particles[10000];
-	std::thread *threadarray;
+
+	std::vector<BondParams>* newbondqueue;
+
+	/* Graphics */
 	std::vector<float> g_coords;
 	std::vector<float> g_uvs;
 	std::vector<float> g_pressures;
@@ -195,16 +222,22 @@ public:
 
 	Preset preset;
 
+	/* Random number generation */
 	//std::normal_distribution<float> normalDistr;
 	//std::mt19937 generator;
 	std::default_random_engine generator;
 	std::normal_distribution<float> distribution;
-
 	float rngLUT[rngLUTsize];
 	int rngLUTindex = 0;
 
+	/* Multithreading */
 	int threads;
-	std::mutex *mtx;
+	std::thread* threadarray;
+	std::mutex* mtx;
 	std::condition_variable *cv;
 	bool *ready;
 };
+
+/*struct ParticleParams {
+
+};*/

@@ -55,6 +55,7 @@ Simulation::Simulation() {
 	mtx = new std::mutex[threads];
 	cv = new std::condition_variable[threads];
 	ready = new bool[threads];
+	newbondqueue = new std::vector<BondParams>[threads];
 
 	distribution = std::normal_distribution<float>(0, 1.0);
 
@@ -230,7 +231,7 @@ void Simulation::setPhysicsParameters() {
 		float r = ((float)i) / (float)sim_interactionresolution;
 		diffusiontable[sim_interaction_solid_solid][i] = 0.4f * (1.0f - r);
 	}
-	frictioncoefficients[sim_interaction_solid_solid] = 0.0f;
+	frictioncoefficients[sim_interaction_solid_solid] = 1.0f;
 	jiggle[sim_interaction_solid_solid] = 0.0f;
 
 
@@ -271,6 +272,31 @@ void Simulation::setPhysicsParameters() {
 	frictioncoefficients[sim_interaction_brittle_brittle] = 0.0f;
 	jiggle[sim_interaction_brittle_brittle] = 0.0f;
 
+
+
+	/* Clay-Clay */
+	interactiondists[sim_interaction_clay_clay] = 4.5f;
+	for (int i = 0; i < 11 + 1; i++) {
+		float r = ((float)i) / (float)11;
+		//forcetable[sim_interaction_sand_sand][i] = (exp(4.0f * (1.0f - r)) - 1.0f) / 4.0f * 10.0f;
+		//diffusiontable[sim_interaction_sand_sand][i] = (exp(4.0f * (1.0f - r)) - 1.0f) / 4.0f * 5.0f;
+		forcetable[sim_interaction_clay_clay][i] = fmin(30.0f, (1.0f - r) * 30.0f);
+	}
+	forcetable[sim_interaction_clay_clay][12] = -0.5f;
+	forcetable[sim_interaction_clay_clay][13] = -1.0f;
+	forcetable[sim_interaction_clay_clay][14] = -0.5f;
+	forcetable[sim_interaction_clay_clay][15] = -0.5f;
+	//for (int i = 11; i < sim_interactionresolution + 1; i++) {
+	//	forcetable[sim_interaction_clay_clay][i] = 0;
+	//}
+	for (int i = 0; i < sim_interactionresolution + 1; i++) {
+		float r = ((float)i) / (float)sim_interactionresolution;
+		diffusiontable[sim_interaction_clay_clay][i] = 1.0f * (1.0f - r);
+	}
+	frictioncoefficients[sim_interaction_clay_clay] = 0.0f;
+	jiggle[sim_interaction_clay_clay] = 0.0f;
+
+
 	/* Cloth bond */
 
 	for (int i = 0; i < 5 + 1; i++) {
@@ -302,7 +328,7 @@ void Simulation::setPhysicsParameters() {
 
 	/* Plastic bond */
 	for (int i = 0; i < sim_bondinteractionresolution + 1; i++) {
-		bondforcetable[sim_bond_plastic][i] = bondforcetable[sim_bond_elastic][i];
+		bondforcetable[sim_bond_plastic][i] = 0.8f*bondforcetable[sim_bond_elastic][i];
 	}
 	bondfrictiontable[sim_bond_plastic] = 1.0;
 	bondinteractiondists[sim_bond_plastic] = 15.0f;
@@ -317,13 +343,21 @@ void Simulation::setPhysicsParameters() {
 	bondinteractiondists[sim_bond_brittle] = 7.5f;
 	bondequilibriumlengths[sim_bond_brittle] = 7.5f * 0.5f;
 	/* Friction bond */
+
+	for (int i = 0; i < sim_bondinteractionresolution + 1; i++) {
+		float r = ((float)i) / (float)(sim_bondinteractionresolution + 1);
+		bondforcetable[sim_bond_friction][i] = clamp(-100.0f * (r - 0.25), -30.0f, 10.0f);
+	}
+	bondfrictiontable[sim_bond_friction] = 1.0;
+	bondinteractiondists[sim_bond_friction] = 15.0f;
+	bondequilibriumlengths[sim_bond_friction] = 7.5f * 0.5f;
 }
 
-void Simulation::applyPhys(int start, int end, int ind) {
+void Simulation::applyPhys(int start, int end, int threadindex) {
 	while (true) {
 
-		std::unique_lock<std::mutex> lck(mtx[ind]);
-		while (!ready[ind]) cv[ind].wait(lck);
+		std::unique_lock<std::mutex> lck(mtx[threadindex]);
+		while (!ready[threadindex]) cv[threadindex].wait(lck);
 
 		for (int i = start; i < end; i++)
 		{
@@ -395,12 +429,19 @@ void Simulation::applyPhys(int start, int end, int ind) {
 									force = force * p->lifetime * q->lifetime;
 									diffusion = diffusion * p->lifetime * q->lifetime * soundabsorptioncoefficient;
 
+									bool bonded = false;
+
 									if (p->numberofbonds != 0 && q->numberofbonds != 0) {
 										for (int j = 0; j < p->numberofbonds; j++) {
 											Bond* b = p->bonds[j];
 											if (b->particleA == q || b->particleB == q) {
+												bonded = true;
 
 												int bondtype = b->bondtype;
+												if (bondtype == sim_bond_plastic) {
+													updatePlasticBond(b, dist);
+												}
+
 												float bondinteractionmaxdist = bondinteractiondists[bondtype];
 												float dn;
 												if (b->variablelength)
@@ -409,10 +450,25 @@ void Simulation::applyPhys(int start, int end, int ind) {
 													dn = (dist / bondinteractionmaxdist) * sim_bondinteractionresolution;
 												int di = (int)dn;
 												float df = dn - di;
-												force = bondforcetable[bondtype][di] * (1.0f - df) + bondforcetable[bondtype][di + 1] * df;
+												if (bondtype == sim_bond_friction) {
+													force += bondforcetable[bondtype][di] * (1.0f - df) + bondforcetable[bondtype][di + 1] * df;
+
+													if (dist - b->length > (0.5f))
+														b->deletionimminent = true;
+												}
+												else {
+													force = bondforcetable[bondtype][di] * (1.0f - df) + bondforcetable[bondtype][di + 1] * df;
+												}
 												diffusion += bondfrictiontable[bondtype];
 												b->close = true;
+												break;
 											}
+										}
+									}
+
+									if (bonded == false && interactionnum == sim_interaction_clay_clay) {
+										if (dist < 4.0f && p->numberofbonds <= 6 && q->numberofbonds <= 6) {
+											newbondqueue[threadindex].push_back(BondParams(p, q, sim_bond_plastic, 3.0f));
 										}
 									}
 
@@ -421,11 +477,18 @@ void Simulation::applyPhys(int start, int end, int ind) {
 
 									float deltavx = (p->vx - q->vx);
 									float deltavy = (p->vy - q->vy);
+
+									if (bonded == false && interactionnum == sim_interaction_sand_sand) {
+										if (deltavx * deltavx + deltavy * deltavy < 0.2f * 0.2f && force > 0.001f) {
+											newbondqueue[threadindex].push_back(BondParams(p, q, sim_bond_friction, dist));
+										}
+									}
+
 									float fparallel = (deltavx*xr + deltavy*yr) * diffusion;
 									if (interactionnum == sim_interaction_water_water)
 										fparallel *= 4.0f;
 									float fperp = (-deltavx * yr + deltavy * xr) * diffusion + 2.5f*diffusion/soundabsorptioncoefficient* randFloatNormal()*jiggle[interactionnum];
-									if (frictioncoefficients[interactionnum] > 0.0f)
+									if (frictioncoefficients[interactionnum] > 0.0f && !bonded)
 										fperp += frictioncoefficients[interactionnum]*((-deltavx * yr + deltavy * xr) >= 0? diffusion : -diffusion);
 									float fx = force * xr + xr * fparallel - yr * fperp;
 									float fy = force * yr + yr * fparallel + xr * fperp;// + sim_buoyancy*(p->mass-q->mass)*diffusion;
@@ -468,6 +531,12 @@ void Simulation::applyPhys(int start, int end, int ind) {
 
 						float dist = sqrt((q->x - p->x) * (q->x - p->x) + (q->y - p->y) * (q->y - p->y));
 						int bondtype = b->bondtype;
+
+
+						if (bondtype == sim_bond_plastic) {
+							updatePlasticBond(b, dist);
+						}
+
 						float bondinteractionmaxdist = bondinteractiondists[bondtype];
 						float dn;
 						if (b->variablelength)
@@ -625,8 +694,8 @@ void Simulation::applyPhys(int start, int end, int ind) {
 			}
 		}
 
-		ready[ind] = false;
-		cv[ind].notify_all();
+		ready[threadindex] = false;
+		cv[threadindex].notify_all();
 	}
 }
 
@@ -658,7 +727,7 @@ void Simulation::update() {
 	instance->phys_2.start();
 	if (!instance->input->paused || instance->input->nextframe) {
 		if (boundarytype == sim_boundary_windtunnel)
-			this->appBC();
+			this->applyWindTunnelBC();
 		stime += sim_timestep;
 
 		overallpressure = 0;
@@ -671,25 +740,19 @@ void Simulation::update() {
 		}
 
 		for (int i = 0; i < objectid; i++) {
-			if (objects[i]->numberofparticles == 0 && objects[i]->physicsenabled) {
-				delete objects[i];
-				if (i < objectid - 1) {
-					objects[i] = objects[objectid - 1];
-					for (int j = 0; j < objects[i]->numberofparticles; j++) {
-						objects[i]->particles[j]->rigidbodyid = i;
-					}
-				}
-				objects.pop_back();
-				objectid--;
+			Rigidbody* rb = objects[i];
+			if (rb->numberofparticles == 0 && rb->physicsenabled) {
+				deleteRigidBody(rb);
 				i--;
-			} else if (objects[i]->physicsenabled){
-				if (objects[i]->modified) {
-					if (objects[i]->fixed)
-						objects[i]->initializeFixedAxisBody(objects[i]->x, objects[i]->y);
+
+			} else if (rb->physicsenabled){
+				if (rb->modified) {
+					if (rb->fixed)
+						rb->initializeFixedAxisBody(rb->x, rb->y);
 					else
-						objects[i]->initializeUnconstrainedBody();
+						rb->initializeUnconstrainedBody();
 				}
-				objects[i]->move();
+				rb->move();
 			}
 		}
 
@@ -780,6 +843,20 @@ void Simulation::update() {
 				localpressureavg[y][x] = localpressureavg[y][x] * 0.98f + localpressure[y][x] * 0.02f;
 			}
 		}
+
+		for (int i = 0; i < threads; i++) {
+			for (int j = newbondqueue[i].size() - 1; j >= 0; j--) {
+				addBond(newbondqueue[i][j].p, newbondqueue[i][j].q, newbondqueue[i][j].bondtype, newbondqueue[i][j].length);
+				newbondqueue[i].pop_back();
+			}
+		}
+
+		for (int i = 0; i < bondid; i++) {
+			if (bonds[i]->deletionimminent) {
+				deleteBond(bonds[i]->particleA, bonds[i]->particleB);
+				i--;
+			}
+		}
 	}
 
 	if (instance->input->modebrush == mode_brush_drag) {
@@ -793,7 +870,7 @@ void Simulation::update() {
 		instance->input->nextframe = false;
 }
 
-void Simulation::appBC() {
+void Simulation::applyWindTunnelBC() {
 
 	float cp = 35.0;
 	float wt_a = 1.0f;
@@ -830,7 +907,7 @@ void Simulation::appBC() {
 				p = p->next;
 				if (q->lifetime < 0)
 				{
-					deleteParticle(q->id);
+					deleteParticle(q);
 				}
 				else if (py >= sim_gridrows - 2 || py < 2) {
 					if (q->pressure > cp * wt_c)
@@ -904,6 +981,25 @@ void Simulation::appBC() {
 	}*/
 }
 
+void Simulation::updatePlasticBond(Bond* b, float dist) {
+	float elasticlimit = 0.5f;
+	float maxcompression = 0.5f;
+	float maxtension = 0.5f;
+	float naturallength = 7.5f * 0.4f;
+	if (dist - b->length > elasticlimit) {
+		b->length = dist - elasticlimit;
+		if (b->length > naturallength + maxtension) {
+			b->deletionimminent = true;
+		}
+	}
+	else if (dist - b->length < -elasticlimit) {
+		b->length = dist + elasticlimit;
+		if (b->length < naturallength - maxcompression) {
+			b->length = naturallength - maxcompression;
+		}
+	}
+}
+
 auto lastt = std::chrono::high_resolution_clock::now();
 
 void Simulation::getInput() {
@@ -958,7 +1054,7 @@ void Simulation::getInput() {
 								qtmp->forcey += vy*force*qtmp->mass;
 							}
 							else if (brushmode == mode_brush_delete) {
-								deleteParticle(qtmp->id);
+								deleteParticle(qtmp);
 							}
 						}
 					}
@@ -981,11 +1077,7 @@ void Simulation::getInput() {
 			br_extralength_2 = 0;
 
 			if (drawrigidobject) {
-				objects.push_back(new Rigidbody);
-				objectid++;
-				if (instance->input->modematerial == sim_type_brittle) {
-					objects[objectid - 1]->brittle = true;
-				}
+				addRigidBody(instance->input->modematerial == sim_type_brittle);
 			}
 
 			instance->input->brushstrokenumber++;
@@ -1096,7 +1188,7 @@ void Simulation::getInput() {
 	if (instance->input->clear) {
 		this->clear();
 		instance->input->clear = false;
-	}
+	} 
 
 	if (instance->input->specialfunc) {
 		fill();
@@ -1183,7 +1275,7 @@ void Simulation::drawLine(float xi, float yi, float ux, float uy, int ox, int oy
 								q = q->next;
 								if (distsq < critdistance) {
 									if (replace || qtmp->material == sim_type_air) {
-										deleteParticle(qtmp->id);
+										deleteParticle(qtmp);
 									}
 									else {
 										canadd = false;
@@ -1193,12 +1285,12 @@ void Simulation::drawLine(float xi, float yi, float ux, float uy, int ox, int oy
 						}
 					}
 					if (canadd) {
-						addParticle(fx, fy, 0.0f, 0.0f, material);
+						Particle* newparticle = addParticle(fx, fy, 0.0f, 0.0f, material);
 						if (objid != -1) {
-							addParticleToRigidBody(particles[particleid - 1], objid);
+							addParticleToRigidBody(newparticle, objects[objid]);
 						}
 						if (bondtype != sim_bond_none) {
-							attachToNearbyParticles(particles[particleid - 1], bondtype, critdistance * 2.0f, false);
+							attachToNearbyParticles(newparticle, bondtype, critdistance * 2.0f, false);
 						}
 					}
 				}
@@ -1226,7 +1318,7 @@ void Simulation::tryAddParticle(float fx, float fy, float critdistance, bool rep
 					q = q->next;
 					if (distsq < critdistance) {
 						if (replace) {
-							deleteParticle(qtmp->id);
+							deleteParticle(qtmp);
 						}
 						else {
 							canadd = false;
@@ -1244,7 +1336,7 @@ void Simulation::addRandomParticle() {
 	addParticle(randFloat(xsimarea) + sim_interactiondistancemax, randFloat(ysimarea) + sim_interactiondistancemax, 0.0f, 0.0f, sim_type_water);
 }
 
-void Simulation::addParticle(float x, float y, float vx, float vy, int type) {
+Particle* Simulation::addParticle(float x, float y, float vx, float vy, int type) {
 	//oh shi
 	Particle *p = new Particle(x, y, vx, vy, particleid, type, masstable[type]);
 	//p->lifespan = randFloat(2.5f) + 1.0f;
@@ -1296,10 +1388,12 @@ void Simulation::addParticle(float x, float y, float vx, float vy, int type) {
 		p->next->prev = p;
 	p->prev = nullptr;
 	particleid++;
+
+	return p;
 }
 
-void Simulation::deleteParticle(int id) {
-	Particle *p = particles[id];
+void Simulation::deleteParticle(Particle* p) {
+	int id = p->id;
 
 	if (p->prev != nullptr)
 		p->prev->next = p->next;
@@ -1309,8 +1403,10 @@ void Simulation::deleteParticle(int id) {
 	if (p->next != nullptr)
 		p->next->prev = p->prev;
 
-	while (p->bonds.size() > 0)
+	while (p->numberofbonds > 0)
 		deleteBond(p->bonds[0]->particleA, p->bonds[0]->particleB);
+
+	removeParticleFromRigidBody(p);
 
 	delete particles[id];
 	if (id < particleid - 1) {
@@ -1336,22 +1432,19 @@ void Simulation::deleteParticle(int id) {
 		g_colors.pop_back();
 	}
 
-	removeParticleFromRigidBody(p);
-
 	particles.pop_back();
 	particleid--;
 
 	//todo update grid
 }
 
-void Simulation::addParticleToRigidBody(Particle* p, int rbid) {
-	p->rigidbodyid = rbid;
-	Rigidbody* object = objects[rbid];
-	p->rigidbodyindex = object->numberofparticles;
-	object->particles.push_back(p);
-	object->coordinates.push_back(Coord(0.0f, 0.0f));
-	object->numberofparticles++;
-	object->modified = true;
+void Simulation::addParticleToRigidBody(Particle* p, Rigidbody* rb) {
+	p->rigidbodyid = rb->id;
+	p->rigidbodyindex = rb->numberofparticles;
+	rb->particles.push_back(p);
+	rb->coordinates.push_back(Coord(0.0f, 0.0f));
+	rb->numberofparticles++;
+	rb->modified = true;
 }
 
 void Simulation::removeParticleFromRigidBody(Particle* p) {
@@ -1372,17 +1465,42 @@ void Simulation::removeParticleFromRigidBody(Particle* p) {
 	rb->modified = true;
 }
 
-void Simulation::addBond(Particle* p, Particle* q, int bondtype, float length) {
+Rigidbody* Simulation::addRigidBody(bool brittle) {
+	Rigidbody* rb = new Rigidbody(objectid, brittle);
+	objects.push_back(rb);
+	objectid++;
+	return rb;
+}
+
+void Simulation::deleteRigidBody(Rigidbody* r) {
+	int id = r->id;
+	delete objects[id];
+	if (id < objectid - 1) {
+		objects[id] = objects[objectid - 1];
+		for (int j = 0; j < objects[id]->numberofparticles; j++) {
+			objects[id]->particles[j]->rigidbodyid = id;
+		}
+		for (int j = 0; j < objects[id]->numberofbonds; j++) {
+			objects[id]->internalbonds[j]->rigidbodyid = id;
+		}
+		objects[id]->id = id;
+	}
+	objects.pop_back();
+	objectid--;
+}
+
+Bond* Simulation::addBond(Particle* p, Particle* q, int bondtype, float length) {
 	int numberofbonds = p->bonds.size();
+	if (p == q)
+		return nullptr;
 	for (int i = 0; i < numberofbonds; i++) {
 		Bond* b = p->bonds[i];
 		if (b->particleB == q || b->particleA == q)
-			return;
+			return nullptr;
 	}
-	Bond* nb = new Bond(p, q, bondtype, length);
+	Bond* nb = new Bond(p, q, bondtype, length, bondid);
 	if (bondtype != sim_bond_cloth)
 		nb->variablelength = true;
-	nb->bondindex = bondid;
 	p->bonds.push_back(nb);
 	q->bonds.push_back(nb);
 	p->numberofbonds++;
@@ -1390,7 +1508,7 @@ void Simulation::addBond(Particle* p, Particle* q, int bondtype, float length) {
 	bonds.push_back(nb);
 
 	if (p->rigidbodyid != -1 && q->rigidbodyid != -1 && q->rigidbodyid == q->rigidbodyid) {
-		addBondToRigidBody(nb, p->rigidbodyid);
+		addBondToRigidBody(nb, objects[p->rigidbodyid]);
 	}
 
 	g_bonds.push_back(0.0f);
@@ -1399,10 +1517,12 @@ void Simulation::addBond(Particle* p, Particle* q, int bondtype, float length) {
 	g_bonds.push_back(1.0f);
 
 	bondid++;
+
+	return nb;
 }
 
 void Simulation::deleteBond(Particle* p, Particle* q) {
-	int numberofbonds = p->bonds.size();
+	int numberofbonds = p->numberofbonds;
 	Bond* fb = nullptr;
 	for (int i = 0; i < numberofbonds; i++) {
 		Bond* b = p->bonds[i];
@@ -1416,26 +1536,28 @@ void Simulation::deleteBond(Particle* p, Particle* q) {
 		}
 	}
 
-	if (fb == nullptr)
+	if (fb == nullptr) {
+		std::cout << "wut" << std::endl;
 		return;
+	}
 
-	numberofbonds = q->bonds.size();
+	numberofbonds = q->numberofbonds;
 	for (int i = 0; i < numberofbonds; i++) {
 		Bond* b = q->bonds[i];
-		if (b == fb) {
+		if (b->particleB == p || b->particleA == p) {
 			q->bonds[i] = q->bonds[numberofbonds - 1];
 			q->bonds.pop_back();
 			q->numberofbonds--;
 			break;
 		}
 	}
-	if (fb->bondindex < bondid) {
-		memcpy(&g_bonds[fb->bondindex * 4], &g_bonds[(bondid - 1) * 4], 4 * sizeof(float));
+	if (fb->id < bondid - 1) {
+		memcpy(&g_bonds[fb->id * 4], &g_bonds[(bondid - 1) * 4], 4 * sizeof(float));
 
-		bonds[fb->bondindex] = bonds[bondid - 1];
-		bonds[fb->bondindex]->bondindex = fb->bondindex;
-		bonds.pop_back();
+		bonds[fb->id] = bonds[bondid - 1];
+		bonds[fb->id]->id = fb->id;
 	}
+	bonds.pop_back();
 
 	for (int i = 0; i < 4; i++) {
 		g_bonds.pop_back();
@@ -1451,11 +1573,11 @@ void Simulation::deleteBond(Particle* p, Particle* q) {
 
 }
 
-void Simulation::addBondToRigidBody(Bond* b, int rbid) {
-	b->rigidbodyid = rbid;
-	b->rigidbodyindex = objects[rbid]->numberofbonds;
-	objects[rbid]->internalbonds.push_back(b);
-	objects[rbid]->numberofbonds++;
+void Simulation::addBondToRigidBody(Bond* b, Rigidbody* rb) {
+	b->rigidbodyid = rb->id;
+	b->rigidbodyindex = rb->numberofbonds;
+	rb->internalbonds.push_back(b);
+	rb->numberofbonds++;
 }
 
 void Simulation::removeBondFromRigidBody(Bond* fb) {
@@ -1468,6 +1590,8 @@ void Simulation::removeBondFromRigidBody(Bond* fb) {
 	}
 	rb->internalbonds.pop_back();
 	rb->numberofbonds--;
+	fb->rigidbodyid = -1;
+	fb->rigidbodyindex = -1;
 }
 
 void Simulation::attachToNearbyParticles(Particle* p, int bondtype, float maxdistance, bool respectbrushstroke) {
@@ -1535,7 +1659,7 @@ void Simulation::loadFromFile(std::string name) {
 
 void Simulation::clear() {
 	for (int i = particleid - 1; i >= 0; i--) {
-		deleteParticle(i);
+		deleteParticle(particles[i]);
 	}
 }
 
@@ -1555,4 +1679,11 @@ float Simulation::clamp(float x, float min, float max) {
 	if (x > max)
 		return max;
 	return x;
+}
+
+BondParams::BondParams(Particle* p, Particle* q, int bondtype, float bondlength) {
+	this->p = p;
+	this->q = q;
+	this->bondtype = bondtype;
+	this->length = bondlength;
 }

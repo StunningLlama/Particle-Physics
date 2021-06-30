@@ -1,9 +1,10 @@
 #include "stdafx.h"
 #include "Bond.h"
 
-Bond::Bond(Particle* A, Particle* B, int type, float len) {
+Bond::Bond(Particle* A, Particle* B, int bondtype, float length, int id) {
 	particleA = A;
 	particleB = B;
-	bondtype = type;
-	length = len;
+	this->bondtype = bondtype;
+	this->length = length;
+	this->id = id;
 }

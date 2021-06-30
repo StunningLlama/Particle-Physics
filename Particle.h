@@ -12,20 +12,19 @@ class Bond;
 
 class Particle {
 public:
-	Particle();
-	Particle(float ix, float iy, float ivx, float ivy, int iid, int elemi, float massi);
+	Particle(float x, float y, float vx, float vy, int id, int elem, float mass);
 
-	float x = 0.0f;
-	float y = 0.0f;
-	float vx = 0.0f;
-	float vy = 0.0f;
+	float x;
+	float y;
+	float vx;
+	float vy;
+	float mass;
+	int material;
+	int id;
 	float forcex = 0.0f;
 	float forcey = 0.0f;
-	float mass = 1.0f;
 	float pressure = 0.0f;
 	float avgpressure = 0.0f;
-	int id = 0;
-	int material = 0;
 	int strokenumber = 0;
 	bool fixed = false;
 

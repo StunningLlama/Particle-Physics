@@ -10,22 +10,13 @@ struct Coord {
 
 class Rigidbody {
 public:
+	Rigidbody(int id, bool brittle);
 	std::vector<Particle*> particles;
 	std::vector<Coord> coordinates;
 
-	/*EXPERIMENTAL, todo: make compatible with deletion*/
-	std::vector<Bond*> internalbonds;
-	int numberofbonds = 0;
-	bool brittle = false;
-	float ax = 0.0f;
-	float ay = 0.0f;
-	float alpha = 0.0f;
-	void computeStresses();
-	void floodFill(Particle* p, int newRigidbodyId);
-
+	int id;
 	float mass = 0.0f;
 	float moment = 0.0f;
-
 	float x = 0.0f;
 	float y = 0.0f;
 	float theta = 0.0f;
@@ -41,4 +32,14 @@ public:
 	void initializeUnconstrainedBody();
 	void initializeFixedAxisBody(float axisX, float axisY);
 	void move();
+
+	/*EXPERIMENTAL, todo: make compatible with deletion*/
+	std::vector<Bond*> internalbonds;
+	int numberofbonds = 0;
+	bool brittle = false;
+	float ax = 0.0f;
+	float ay = 0.0f;
+	float alpha = 0.0f;
+	void computeStresses();
+	void floodFill(Particle* p, Rigidbody* newRigidbody);
 };

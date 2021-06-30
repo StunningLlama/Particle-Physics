@@ -59,9 +59,9 @@ void Input::keyboard(unsigned char key, int x, int y) {
 	if (key == '5')
 		modematerial = sim_type_sand;
 	if (key == '6')
-		modematerial = sim_type_cloth;
-	if (key == '7')
 		modematerial = sim_type_elastic;
+	if (key == '7')
+		modematerial = sim_type_cloth;
 	if (key == '8')
 		modematerial = sim_type_plastic;
 	if (key == '9')

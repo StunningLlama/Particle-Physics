@@ -10,6 +10,11 @@ Coord::Coord(float ix, float iy) {
 	y = iy;
 }
 
+Rigidbody::Rigidbody(int id, bool brittle) {
+	this->id = id;
+	this->brittle = brittle;
+}
+
 void Rigidbody::initializeUnconstrainedBody() {
 	float comX = 0.0f;
 	float comY = 0.0f;
@@ -129,6 +134,8 @@ void Rigidbody::computeStresses() {
 	int maxiterations = 200;
 	int j = 0;
 	for (j = 0; j < maxiterations && errorX + errorY > 0.2f; j++) {
+		errorX = 0.0f;
+		errorY = 0.0f;
 		for (int i = 0; i < numberofparticles; i++) {
 			Particle* p = particles[i];
 			p->minquantityx = p->forcex - p->max;
@@ -157,7 +164,7 @@ void Rigidbody::computeStresses() {
 		}
 
 	}
-	std::cout << "MSEx " << errorX << ", MSEy " << errorY << ", Iterations "  << j << std::endl;
+	//std::cout << "MSEx " << errorX << ", MSEy " << errorY << ", Iterations "  << j << ", particles: " << numberofparticles << std::endl;
 	for (int i = 0; i < numberofparticles; i++) {
 		Particle* p = particles[i];
 		p->pressure = 0.0f;
@@ -189,15 +196,13 @@ void Rigidbody::computeStresses() {
 			particles[i]->traversed = false;
 		}
 
-		floodFill(particles[0], -1);
+		floodFill(particles[0], nullptr);
 		for (int i = 1; i < numberofparticles; i++) {
 			if (!particles[i]->traversed) {
 				//std::cout << " Fracture at " << i << std::endl;
-				instance->sim->objects.push_back(new Rigidbody);
-				instance->sim->objectid++;
-				floodFill(particles[i], instance->sim->objectid-1);
-				instance->sim->objects[instance->sim->objectid - 1]->initializeUnconstrainedBody();
-				instance->sim->objects[instance->sim->objectid - 1]->brittle = true;
+				Rigidbody* newrb = instance->sim->addRigidBody(true);
+				floodFill(particles[i], newrb);
+				newrb->initializeUnconstrainedBody();
 				i--; 
 			}
 		}
@@ -206,15 +211,15 @@ void Rigidbody::computeStresses() {
 	}
 }
 
-void Rigidbody::floodFill(Particle* p, int newRigidbodyId) {
+void Rigidbody::floodFill(Particle* p, Rigidbody* newRigidbody) {
 	p->traversed = true;
-	if (newRigidbodyId != -1) {
+	if (newRigidbody != nullptr) {
 		instance->sim->removeParticleFromRigidBody(p);
-		instance->sim->addParticleToRigidBody(p, newRigidbodyId);
+		instance->sim->addParticleToRigidBody(p, newRigidbody);
 		for (int i = 0; i < p->numberofbonds; i++) {
-			if (p->bonds[i]->rigidbodyid != newRigidbodyId) {
+			if (p->bonds[i]->rigidbodyid != newRigidbody->id) {
 				instance->sim->removeBondFromRigidBody(p->bonds[i]);
-				instance->sim->addBondToRigidBody(p->bonds[i], newRigidbodyId);
+				instance->sim->addBondToRigidBody(p->bonds[i], newRigidbody);
 			}
 		}
 	}
@@ -225,6 +230,6 @@ void Rigidbody::floodFill(Particle* p, int newRigidbodyId) {
 		if (q == p)
 			q = p->bonds[i]->particleB;
 		if (!q->traversed)
-			floodFill(q, newRigidbodyId);
+			floodFill(q, newRigidbody);
 	}
 }

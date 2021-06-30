@@ -25,10 +25,10 @@ void Graphics::updatebuffer() {
 	}
 
 	for (Bond* b : instance->sim->bonds) {
-		instance->sim->g_bonds[b->bondindex * 4] = b->particleA->x;
-		instance->sim->g_bonds[b->bondindex * 4 + 1] = b->particleA->y;
-		instance->sim->g_bonds[b->bondindex * 4 + 2] = b->particleB->x;
-		instance->sim->g_bonds[b->bondindex * 4 + 3] = b->particleB->y;
+		instance->sim->g_bonds[b->id * 4] = b->particleA->x;
+		instance->sim->g_bonds[b->id * 4 + 1] = b->particleA->y;
+		instance->sim->g_bonds[b->id * 4 + 2] = b->particleB->x;
+		instance->sim->g_bonds[b->id * 4 + 3] = b->particleB->y;
 	}
 
 	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0); 
