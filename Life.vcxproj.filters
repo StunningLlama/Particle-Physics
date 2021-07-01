@@ -13,111 +13,126 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\graphics">
+      <UniqueIdentifier>{0c9063a2-8b47-44c9-8a51-7e03a5303a7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\simulation">
+      <UniqueIdentifier>{ed9e11c3-d38d-430c-9540-3933ebda0ff4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\graphics">
+      <UniqueIdentifier>{08319632-3209-41cb-a2c5-84705a26dc51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\simulation">
+      <UniqueIdentifier>{808d8c20-97d8-42b1-80ba-41089df99b2b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
     <Text Include="Todo.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Particle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Simulation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Life.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Timer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Input.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Font.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Preset.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Rigidbody.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Bond.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <None Include="resources\background.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\background.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\bond.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\bond.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\font.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\font.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\shader.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\shader.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\shaderp.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
+    <ClCompile Include="src\Input.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Life.cpp">
+    <ClCompile Include="src\Life.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics.cpp">
+    <ClCompile Include="src\Timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Simulation.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\graphics\Button.cpp">
+      <Filter>Source Files\graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Particle.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\graphics\Font.cpp">
+      <Filter>Source Files\graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Timer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\graphics\Graphics.cpp">
+      <Filter>Source Files\graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Input.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\graphics\GUI.cpp">
+      <Filter>Source Files\graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Font.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\simulation\Bond.cpp">
+      <Filter>Source Files\simulation</Filter>
     </ClCompile>
-    <ClCompile Include="Preset.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\simulation\Particle.cpp">
+      <Filter>Source Files\simulation</Filter>
     </ClCompile>
-    <ClCompile Include="Rigidbody.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\simulation\Preset.cpp">
+      <Filter>Source Files\simulation</Filter>
     </ClCompile>
-    <ClCompile Include="Bond.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\simulation\Rigidbody.cpp">
+      <Filter>Source Files\simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\simulation\Simulation.cpp">
+      <Filter>Source Files\simulation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader.fs">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="shader.vs">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="font.vs">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="font.fs">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="shaderp.vs">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="background.fs">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="background.vs">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="bond.vs">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="bond.fs">
-      <Filter>Resource Files</Filter>
-    </None>
+    <ClInclude Include="src\Input.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Life.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\Button.h">
+      <Filter>Header Files\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\Font.h">
+      <Filter>Header Files\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\Graphics.h">
+      <Filter>Header Files\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\GUI.h">
+      <Filter>Header Files\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simulation\Bond.h">
+      <Filter>Header Files\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simulation\Particle.h">
+      <Filter>Header Files\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simulation\Preset.h">
+      <Filter>Header Files\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simulation\Rigidbody.h">
+      <Filter>Header Files\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simulation\Simulation.h">
+      <Filter>Header Files\simulation</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

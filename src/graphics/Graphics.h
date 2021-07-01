@@ -46,15 +46,15 @@ private:
 	GLuint bondShader;
 	GLuint bgTexture;
 
-	const char* vsParticle = "shader.vs";
-	const char* fsParticleNormal = "shader.fs";
-	const char* vsParticlePressure = "shaderp.vs";
-	const char* fsBackground = "background.fs";
-	const char* vsBackground = "background.vs";
-	const char* fVSFileName = "font.vs";
-	const char* fFSFileName = "font.fs";
-	const char* bVSFileName = "bond.vs";
-	const char* bFSFileName = "bond.fs";
+	const char* vsParticle = "resources/shader.vs";
+	const char* fsParticleNormal = "resources/shader.fs";
+	const char* vsParticlePressure = "resources/shaderp.vs";
+	const char* fsBackground = "resources/background.fs";
+	const char* vsBackground = "resources/background.vs";
+	const char* fVSFileName = "resources/font.vs";
+	const char* fFSFileName = "resources/font.fs";
+	const char* bVSFileName = "resources/bond.vs";
+	const char* bFSFileName = "resources/bond.fs";
 
 	float bgPosData[8] = { -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0 };
 	float bgUVdata[8] = { 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0 };

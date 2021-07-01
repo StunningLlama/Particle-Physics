@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Simulation.h"
+#include "simulation/Simulation.h"
 
 #define mode_brush_move 0
 #define mode_brush_add 1

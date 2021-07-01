@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Input.h"
 #include "Life.h"
 #include <gl/glew.h>

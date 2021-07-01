@@ -1,6 +1,5 @@
-#include "stdafx.h"
 #include "Graphics.h"
-#include "Life.h"
+#include "../Life.h"
 
 #include <iostream>
 #include <fstream>

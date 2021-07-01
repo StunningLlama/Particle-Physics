@@ -1,12 +1,11 @@
-#include "stdafx.h"
 #include "Preset.h"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
 
 #include "Simulation.h"
-#include "Life.h"
-#include "Input.h"
+#include "../Life.h"
+#include "../Input.h"
 
 void Preset::startToilet() {
 	drawing = true;

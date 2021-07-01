@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Particle.h"
 
 Particle::Particle(float ix, float iy, float ivx, float ivy, int iid, int elemi, float massi) {

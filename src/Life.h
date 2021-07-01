@@ -1,6 +1,6 @@
 #pragma once
-#include "Simulation.h"
-#include "Graphics.h"
+#include "simulation/Simulation.h"
+#include "graphics/Graphics.h"
 #include "Timer.h"
 #include "Input.h"
 

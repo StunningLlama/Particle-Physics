@@ -1,13 +1,12 @@
-#include "stdafx.h"
 #include "Simulation.h"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
 
 #include "Particle.h"
-#include "Life.h"
-#include "Input.h"
-#include "Timer.h"
+#include "../Life.h"
+#include "../Input.h"
+#include "../Timer.h"
 #include "Rigidbody.h"
 #include "Bond.h"
 #include <vector>

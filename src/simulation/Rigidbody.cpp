@@ -1,8 +1,7 @@
-#include "stdafx.h"
 #include "Rigidbody.h"
 #include "Particle.h"
 #include "Simulation.h"
-#include "Life.h"
+#include "../Life.h"
 #include <iostream>
 
 Coord::Coord(float ix, float iy) {

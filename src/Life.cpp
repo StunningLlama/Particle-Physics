@@ -1,13 +1,12 @@
 // Life.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
 #include "Life.h"
 #include <string.h>
 #include <gl/freeglut.h>
-#include "Graphics.h"
-#include "Simulation.h"
-#include "Preset.h"
+#include "graphics/Graphics.h"
+#include "simulation/Simulation.h"
+#include "simulation/Preset.h"
 #include <Windows.h>
 #include <iostream>
 Life *instance;
