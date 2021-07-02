@@ -1,13 +1,13 @@
 #pragma once
 
-#include <gl/glew.h>
-#include <gl/glut.h>
 #include <string>
 #include "Font.h"
 #include <string>
+#include "GUI.h"
 
 class Graphics {
 public:
+	GUI gui;
 	Font font;
 	std::string hudtext;
 	int shadermode = 1;
@@ -20,23 +20,24 @@ public:
 	int initializeGraphics();
 	void display();
 	void CreateVertexBuffer();
-	void AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType);
-	void CompileShaders(GLuint &ShaderProgram, const char *vsName, const char *fsName);
-	bool ReadFile(const char* pFileName, std::string& outFile);
+	void AddShader(GLuint ShaderProgram, std::string pShaderText, GLenum ShaderType);
+	void CompileShaders(GLuint &ShaderProgram, std::string vsName, std::string fsName);
+	bool ReadFile(std::string pFileName, std::string& outFile);
 
-private:
+	int windowWidth = 0;
+	int windowHeight = 0;
 
-	GLuint VBOv;
-	GLuint VBOuv;
-	GLuint VBOd;
-	GLuint VBOp;
-	GLuint VBOc;
-	GLuint VBObgPos;
-	GLuint VBObgUV;
-	GLuint gTransform;
-	GLuint gTransform2;
-	GLuint gTransform3;
-	GLuint gTransform4;
+	GLuint VBOparticleVertex;
+	GLuint VBOparticleUV;
+	GLuint VBObondVertex;
+	GLuint VBOparticlePressure;
+	GLuint VBOparticleColor;
+	GLuint VBObackgroundVertex;
+	GLuint VBObackgroundUV;
+	GLuint gTransformParticleShaderNormal;
+	GLuint gTransformFont;
+	GLuint gTransformParticleShaderPressure;
+	GLuint gTransformBondShader;
 	GLuint gFontColor;
 	GLuint gTexture;
 	GLuint particleShaderNormal;
@@ -44,17 +45,18 @@ private:
 	GLuint backgroundShader;
 	GLuint fontShader;
 	GLuint bondShader;
-	GLuint bgTexture;
+	GLuint backgroundTexture;
+	GLuint windowId;
 
-	const char* vsParticle = "resources/shader.vs";
-	const char* fsParticleNormal = "resources/shader.fs";
-	const char* vsParticlePressure = "resources/shaderp.vs";
-	const char* fsBackground = "resources/background.fs";
-	const char* vsBackground = "resources/background.vs";
-	const char* fVSFileName = "resources/font.vs";
-	const char* fFSFileName = "resources/font.fs";
-	const char* bVSFileName = "resources/bond.vs";
-	const char* bFSFileName = "resources/bond.fs";
+	std::string vsParticle = "resources/shader.vs";
+	std::string fsParticleNormal = "resources/shader.fs";
+	std::string vsParticlePressure = "resources/shaderp.vs";
+	std::string fsBackground = "resources/background.fs";
+	std::string vsBackground = "resources/background.vs";
+	std::string fVSFileName = "resources/font.vs";
+	std::string fFSFileName = "resources/font.fs";
+	std::string bVSFileName = "resources/bond.vs";
+	std::string bFSFileName = "resources/bond.fs";
 
 	float bgPosData[8] = { -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0 };
 	float bgUVdata[8] = { 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0 };

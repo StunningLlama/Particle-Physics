@@ -1,3 +1,4 @@
+#include "../Includes.h"
 #include "Simulation.h"
 
 #define _USE_MATH_DEFINES
@@ -1169,18 +1170,12 @@ void Simulation::getInput() {
 
 
 	if (instance->input->save) {
-		std::string name;
-		std::cout << "Please enter file name. ";
-		std::cin >> name;
-		saveToFile(name);
+		save.saveToFile(this);
 		instance->input->save = false;
 	}
 
 	if (instance->input->load) {
-		std::string name;
-		std::cout << "Please enter file name. ";
-		std::cin >> name;
-		loadFromFile(name);
+		save.loadFromFile(this);
 		instance->input->load = false;
 	}
 
@@ -1611,48 +1606,6 @@ void Simulation::attachToNearbyParticles(Particle* p, int bondtype, float maxdis
 				}
 			}
 		}
-	}
-}
-
-void Simulation::saveToFile(std::string name) {
-	std::ofstream file(name, std::ios::out | std::ios::binary | std::ios::trunc);
-	int version = 1;
-	file.write((char*)&version, sizeof(int));
-	file.write((char*)&this->particleid, sizeof(int));
-
-	for (int i = 0; i < particleid; i++) {
-		Particle *p = particles[i];
-
-		file.write((char*)&p->x, sizeof(float));
-		file.write((char*)&p->y, sizeof(float));
-		file.write((char*)&p->vx, sizeof(float));
-		file.write((char*)&p->vy, sizeof(float));
-		file.write((char*)&p->material, sizeof(int));
-	}
-	file.close();
-}
-
-void Simulation::loadFromFile(std::string name) {
-	this->clear();
-	std::ifstream file(name, std::ios::in | std::ios::binary);
-	int version;
-	int size;
-	if (file.is_open())
-	{
-		file.read((char*)&version, sizeof(int));
-		file.read((char*)&size, sizeof(int));
-		for (int i = 0; i < size; i++) {
-			float x, y, vx, vy;
-			int elem;
-			file.read((char*)&x, sizeof(float));
-			file.read((char*)&y, sizeof(float));
-			file.read((char*)&vx, sizeof(float));
-			file.read((char*)&vy, sizeof(float));
-			file.read((char*)&elem, sizeof(float));
-			addParticle(x, y, vx, vy, elem);
-		}
-
-		file.close();
 	}
 }
 

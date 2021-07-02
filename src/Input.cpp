@@ -1,7 +1,6 @@
+#include "Includes.h"
 #include "Input.h"
 #include "Life.h"
-#include <gl/glew.h>
-#include <gl/glut.h>
 
 
 void Input::mouseClick(int button, int state, int x, int y) {
@@ -70,7 +69,7 @@ void Input::keyboard(unsigned char key, int x, int y) {
 		paused = !paused;
 	if (key == 0x13)
 		save = true;
-	if (key == 0x17)
+	if (key == 0x0F)
 		load = true;
 	if (key == 'c')
 		clear = true;

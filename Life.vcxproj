@@ -155,6 +155,8 @@
     <None Include="resources\background.vs" />
     <None Include="resources\bond.fs" />
     <None Include="resources\bond.vs" />
+    <None Include="resources\button.fs" />
+    <None Include="resources\button.vs" />
     <None Include="resources\font.fs" />
     <None Include="resources\font.vs" />
     <None Include="resources\shader.fs" />
@@ -166,12 +168,14 @@
     <ClCompile Include="src\graphics\Font.cpp" />
     <ClCompile Include="src\graphics\Graphics.cpp" />
     <ClCompile Include="src\graphics\GUI.cpp" />
+    <ClCompile Include="src\graphics\Text.cpp" />
     <ClCompile Include="src\Input.cpp" />
     <ClCompile Include="src\Life.cpp" />
     <ClCompile Include="src\simulation\Bond.cpp" />
     <ClCompile Include="src\simulation\Particle.cpp" />
     <ClCompile Include="src\simulation\Preset.cpp" />
     <ClCompile Include="src\simulation\Rigidbody.cpp" />
+    <ClCompile Include="src\simulation\Save.cpp" />
     <ClCompile Include="src\simulation\Simulation.cpp" />
     <ClCompile Include="src\Timer.cpp" />
   </ItemGroup>
@@ -180,12 +184,15 @@
     <ClInclude Include="src\graphics\Font.h" />
     <ClInclude Include="src\graphics\Graphics.h" />
     <ClInclude Include="src\graphics\GUI.h" />
+    <ClInclude Include="src\graphics\Text.h" />
+    <ClInclude Include="src\Includes.h" />
     <ClInclude Include="src\Input.h" />
     <ClInclude Include="src\Life.h" />
     <ClInclude Include="src\simulation\Bond.h" />
     <ClInclude Include="src\simulation\Particle.h" />
     <ClInclude Include="src\simulation\Preset.h" />
     <ClInclude Include="src\simulation\Rigidbody.h" />
+    <ClInclude Include="src\simulation\Save.h" />
     <ClInclude Include="src\simulation\Simulation.h" />
     <ClInclude Include="src\Timer.h" />
   </ItemGroup>

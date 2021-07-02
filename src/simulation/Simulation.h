@@ -2,6 +2,7 @@
 #include "Particle.h"
 #include "Preset.h"
 #include "Rigidbody.h"
+#include "Save.h"
 #include <string>
 #include <vector>
 #include <mutex>
@@ -92,6 +93,7 @@
 
 #define EPSILON 0.0001f
 
+class Save;
 
 struct BondParams {
 	BondParams(Particle* p, Particle* q, int bondtype, float bondlength);
@@ -134,8 +136,6 @@ public:
 	float randFloatNormal();
 	float clamp(float x, float min, float max);
 	void getInput();
-	void saveToFile(std::string name);
-	void loadFromFile(std::string name);
 	void drawLine(float xi, float yi, float ux, float uy, int ox, int oy, int tli2, float chdiameter, float mousedist, float critdistance, bool replace, int material, float exlen2, int objid, int bondtype);
 	void fill();
 	void updatePlasticBond(Bond* b, float distance);
@@ -221,6 +221,7 @@ public:
 	std::vector<unsigned char> g_colors;
 
 	Preset preset;
+	Save save;
 
 	/* Random number generation */
 	//std::normal_distribution<float> normalDistr;

@@ -58,6 +58,12 @@
     <None Include="resources\shaderp.vs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="resources\button.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\button.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Input.cpp">
@@ -94,6 +100,12 @@
       <Filter>Source Files\simulation</Filter>
     </ClCompile>
     <ClCompile Include="src\simulation\Simulation.cpp">
+      <Filter>Source Files\simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\Text.cpp">
+      <Filter>Source Files\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\simulation\Save.cpp">
       <Filter>Source Files\simulation</Filter>
     </ClCompile>
   </ItemGroup>
@@ -133,6 +145,15 @@
     </ClInclude>
     <ClInclude Include="src\simulation\Simulation.h">
       <Filter>Header Files\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\Text.h">
+      <Filter>Header Files\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simulation\Save.h">
+      <Filter>Header Files\simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Includes.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

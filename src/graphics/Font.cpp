@@ -1,3 +1,4 @@
+#include "../Includes.h"
 #include "Font.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H 
@@ -82,7 +83,7 @@ int Font::loadfont() {
 	return 0;
 }
 
-void Font::RenderText(GLuint shader, std::string text, float x, float y, float scale, bool rightAlign)
+void Font::RenderText(GLuint shader, std::string text, float x, float y, float scale, int align)
 {
 	// activate corresponding render state	
 	//glUniform3f(glGetUniformLocation(s.Program, "textColor"), color.x, color.y, color.z);
@@ -90,7 +91,7 @@ void Font::RenderText(GLuint shader, std::string text, float x, float y, float s
 	glBindVertexArray(VAO);
 
 	float totlen = 0.0f;
-	if (rightAlign) {
+	if (align == font_align_right || align == font_align_center) {
 		std::string::const_iterator c0;
 		for (c0 = text.begin(); c0 != text.end(); c0++)
 		{
@@ -99,7 +100,13 @@ void Font::RenderText(GLuint shader, std::string text, float x, float y, float s
 		}
 	}
 
-	x -= totlen;
+	if (align == font_align_right) {
+		x -= totlen;
+	}
+	else if (align == font_align_center) {
+		x -= totlen/2.0f;
+	}
+
 
 	// iterate through all characters
 	std::string::const_iterator c;
