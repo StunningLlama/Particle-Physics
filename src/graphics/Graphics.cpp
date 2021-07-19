@@ -156,6 +156,8 @@ void Graphics::display() {
 	glUseProgram(0);
 	glutSwapBuffers();
 	instance->graphics_1.end();
+	if (instance->graphics_1.marks == 0)
+		std::cout << std::endl;
 }
 
 void Graphics::CreateVertexBuffer()
@@ -333,9 +335,9 @@ int Graphics::initializeGraphics() {
 	CompileShaders(bondShader, bVSFileName, bFSFileName);
 	gTransformBondShader = glGetUniformLocation(bondShader, "transform");
 	//std::cout << gTransform2 << std::endl;
-	std::cout << gFontColor << std::endl;
+	
 	//std::cout << glGetUniformLocation(fontShader, "text") << std::endl;
-	if (true) {
+	/*if (true) {
 		GLint i;
 		GLint count;
 
@@ -355,7 +357,7 @@ int Graphics::initializeGraphics() {
 
 			printf("Uniform #%d Type: %u Name: %s\n", i, type, name);
 		}
-	}
+	}*/
 
 
 	int fontstate = font.loadfont();

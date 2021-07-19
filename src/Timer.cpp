@@ -18,7 +18,7 @@ void Timer::end() {
 	marks++;
 	if (marks == 50) {
 		std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(tot / 50);
-		if (instance->timerenabled)
+		if (DEBUG)
 			std::cout << time_span.count()*1000000.0 << " microseconds for function " << functionname << std::endl;
 		marks = 0;
 		tot = std::chrono::high_resolution_clock::duration::zero();

@@ -2,6 +2,7 @@
 
 #include "simulation/Simulation.h"
 
+#define brushes 5
 #define mode_brush_move 0
 #define mode_brush_add 1
 #define mode_brush_replace 2
@@ -39,7 +40,7 @@ public:
 
 		float densitytable[5] = {2.0f, 1.5f, 1.0f, 0.75, 0.5f};
 
-		const char *brushnames[5] = {"Brush: move", "Brush: add", "Brush: replace", "Brush: delete", "Brush: drag" };
+		const char *brushnames[brushes] = {"Brush: move", "Brush: add", "Brush: replace", "Brush: delete", "Brush: drag" };
 		const char *sizenames[5] = { "Size: 1", "Size: 2", "Size: 3", "Size: 4", "Size: 5" };
 		const char *densitynames[5] = { "Density: 1", "Density: 2", "Density: 3", "Density: 4", "Density: 5" };
 };

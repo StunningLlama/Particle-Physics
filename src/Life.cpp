@@ -45,7 +45,9 @@ int Life::start(int argc, char** argv) {
 	gphx->gui.gphx = gphx;
 	gphx->gui.initializeGraphics();
 	//sim->preset.startAirfoil();
-	instance->input->paused = true;
+	instance->gphx->gui.togglePause();
+	instance->gphx->gui.setMaterial(sim_type_water);
+	instance->gphx->gui.setBrush(mode_brush_add);
 
 	glutMainLoop();
 	
@@ -54,7 +56,9 @@ int Life::start(int argc, char** argv) {
 
 int main(int argc, char** argv) {
 #ifdef WINDOWS
-	FreeConsole();
+	if (!DEBUG) {
+		FreeConsole();
+	}
 #endif
 	instance = new Life;
 	instance->start(argc, argv);

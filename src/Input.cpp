@@ -14,6 +14,10 @@ void Input::mouseClick(int button, int state, int x, int y) {
 		this->mouseDownR = true;
 	else if (button == GLUT_RIGHT_BUTTON && state == GLUT_UP)
 		this->mouseDownR = false;
+	if (button == 3 && state == GLUT_DOWN)
+		brushsize = clamp(brushsize + 1, 1, 5);
+	if (button == 4 && state == GLUT_DOWN)
+		brushsize = clamp(brushsize - 1, 1, 5);
 }
 
 void Input::mouseMotion(int x, int y) {
@@ -36,37 +40,21 @@ void Input::mousePassiveMotion(int x, int y) {
 
 void Input::keyboard(unsigned char key, int x, int y) {
 	if (key == 'a')
-		modebrush = mode_brush_add;
+		instance->gphx->gui.setBrush(mode_brush_add);
 	if (key == 'r')
-		modebrush = mode_brush_replace;
+		instance->gphx->gui.setBrush(mode_brush_replace);
 	if (key == 'd')
-		modebrush = mode_brush_delete;
+		instance->gphx->gui.setBrush(mode_brush_delete);
 	if (key == 'm')
-		modebrush = mode_brush_move;
+		instance->gphx->gui.setBrush(mode_brush_move);
 	if (key == 'q')
-		modebrush = mode_brush_drag;
+		instance->gphx->gui.setBrush(mode_brush_drag);
 
-	if (key == '1')
-		modematerial = sim_type_water;
-	if (key == '2')
-		modematerial = sim_type_air;
-	if (key == '3')
-		modematerial = sim_type_barrier;
-	if (key == '4')
-		modematerial = sim_type_stone;
-	if (key == '5')
-		modematerial = sim_type_sand;
-	if (key == '6')
-		modematerial = sim_type_elastic;
-	if (key == '7')
-		modematerial = sim_type_cloth;
-	if (key == '8')
-		modematerial = sim_type_plastic;
-	if (key == '9')
-		modematerial = sim_type_brittle;
+	if (key >= '1' && key <= '9')
+		instance->gphx->gui.setMaterial(key - '1');
 
 	if (key == 'p')
-		paused = !paused;
+		instance->gphx->gui.togglePause();
 	if (key == 0x13)
 		save = true;
 	if (key == 0x0F)

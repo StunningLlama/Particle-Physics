@@ -41,43 +41,58 @@ void Button::renderText(Font f, GLuint shader) {
 	f.RenderText(shader, this->text, x+width/2.0f, y + (height / 2.0f - fontheight / 2.0f), fontheight / fontpt, font_align_center);
 }
 
-void Button::mouseclick(int mx, int my, bool mousepressed) {
-	if (this->hovering && !mousepressed) {
-		instance->input->keyboard('1' + actionid, 0, 0);
-		this->activated = true;
-	} else if (!this->hovering && !mousepressed) {
-		this->activated = false;
-	}
-	else if (this->hovering && mousepressed) {
-		r = 0.7;
-		g = 0.7;
-		b = 0.6;
-	}
-}
-void Button::mousemovement(int mx, int my, bool mousepressed) {
-	if (mx > x && mx < x + width && my > y && my < y + height) {
-		if (mousepressed) {
-			r = 0.7;
-			g = 0.7;
-			b = 0.6;
+void Button::updateColors() {
+	if (hovering) {
+		if (clicking) {
+			r = buttonpressedr;
+			g = buttonpressedg;
+			b = buttonpressedb;
+
+			textr = textactivatedr;
+			textg = textactivatedg;
+			textb = textactivatedg;
 		}
 		else {
-			r = 0.5;
-			g = 0.5;
-			b = 0.5;
+
+			if (activated) {
+				r = buttonactivatedr*1.5f;
+				g = buttonactivatedg*1.5f;
+				b = buttonactivatedb*1.5f;
+
+				textr = textactivatedr;
+				textg = textactivatedg;
+				textb = textactivatedb;
+			}
+			else {
+				r = buttondefaultr * 1.5f;
+				g = buttondefaultg * 1.5f;
+				b = buttondefaultb * 1.5f;
+
+				textr = textdefaultr;
+				textg = textdefaultg;
+				textb = textdefaultb;
+			}
 		}
 		hovering = true;
 	}
 	else {
 		if (activated) {
-			r = (float)instance->sim->colortable[actionid][0] / 255.0f;
-			g = (float)instance->sim->colortable[actionid][1] / 255.0f;
-			b = (float)instance->sim->colortable[actionid][2] / 255.0f;
+			r = buttonactivatedr;
+			g = buttonactivatedg;
+			b = buttonactivatedb;
+
+			textr = textactivatedr;
+			textg = textactivatedg;
+			textb = textactivatedb;
 		}
 		else {
-			r = 0.2;
-			g = 0.2;
-			b = 0.2;
+			r = buttondefaultr;
+			g = buttondefaultg;
+			b = buttondefaultb;
+
+			textr = textdefaultr;
+			textg = textdefaultg;
+			textb = textdefaultb;
 		}
 		hovering = false;
 	}

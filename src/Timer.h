@@ -7,7 +7,6 @@ public:
 	Timer(char *name);
 	void start();
 	void end();
-private:
 	std::chrono::high_resolution_clock::time_point t;
 	int marks = 0;
 	std::chrono::high_resolution_clock::duration tot;

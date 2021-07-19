@@ -2,6 +2,7 @@
 #include "GUI.h"
 #include "Button.h"
 #include "../Life.h"
+#include "../Input.h"
 
 #include <iostream>
 #include <fstream>
@@ -9,6 +10,7 @@
 void GUI::updatebuffer() {
 	for (int i = 0; i < buttons.size(); i++)
 	{
+		buttons[i]->updateColors();
 		buttons[i]->setGraphicsData();
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferSubData(GL_ARRAY_BUFFER, i * 20 * sizeof(float), 20 * sizeof(float), &(buttons[i]->vertexdata[0]));
@@ -45,11 +47,10 @@ void GUI::display() {
 
 	glUseProgram(fontShader);
 
-	glUniform3f(gFontColor, 0.9f, 0.9f, 0.9f);
-
 	glUniformMatrix3fv(gTransformFontShader, 1, GL_FALSE, &mat[0][0]);
 
 	for (int i = 0; i < buttons.size(); i++) {
+		glUniform3f(gFontColor, buttons[i]->textr, buttons[i]->textg, buttons[i]->textb);
 		buttons[i]->renderText(font, fontShader);
 	}
 
@@ -66,28 +67,126 @@ void GUI::CreateVertexBuffer()
 }
 
 
-void guiMouseClick(int button, int state, int x, int y) {
+void guiMouseClick(int button, int state, int mx, int my) {
 	int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
 	GUI* gui = &instance->gphx->gui;
-	gui->mousedown = button == GLUT_LEFT_BUTTON && state == GLUT_DOWN;
 	for (Button* b : gui->buttons) {
-		b->mouseclick(x, windowHeight - y, gui->mousedown);
+		int x = mx;
+		int y = windowHeight - my;
+		if (b->hovering && (button == GLUT_LEFT_BUTTON && state == GLUT_UP)) {
+			if (b->buttongroup == button_group_materials) {
+				gui->setMaterial(b->actionid);
+			}
+			else if (b->buttongroup == button_group_brushes) {
+				gui->setBrush(b->actionid);
+			}
+			else if (b->buttongroup == button_group_save) {
+				instance->input->save = true;
+			}
+			else if (b->buttongroup == button_group_load) {
+				instance->input->load = true;
+			}
+			else if (b->buttongroup == button_group_pause) {
+				gui->togglePause();
+			}
+		}
+		else if (b->hovering && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+			b->clicking = true;
+		}
+	}
+	gui->mousedown = (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN);
+
+
+	if (button == 3 && state == GLUT_DOWN)
+		instance->input->brushsize = instance->input->clamp(instance->input->brushsize + 1, 1, 5);
+	if (button == 4 && state == GLUT_DOWN)
+		instance->input->brushsize = instance->input->clamp(instance->input->brushsize - 1, 1, 5);
+}
+
+
+void GUI::setMaterial(int id) {
+	instance->input->modematerial = id;
+	for (Button* bp : buttons) {
+		if (bp->buttongroup == button_group_materials) {
+			if (bp->actionid == id) {
+				bp->activated = true;
+			}
+			else {
+				bp->activated = false;
+			}
+		}
 	}
 }
 
-void guiMouseMotion(int x, int y) {
-	int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
-	GUI* gui = &instance->gphx->gui;
-	for (Button* b : gui->buttons) {
-		b->mousemovement(x, windowHeight - y, gui->mousedown);
+void GUI::setBrush(int id) {
+	instance->input->modebrush = id;
+	for (Button* bp : buttons) {
+		if (bp->buttongroup == button_group_brushes) {
+			if (bp->actionid == id) {
+				bp->activated = true;
+			}
+			else {
+				bp->activated = false;
+			}
+		}
 	}
 }
 
-void guiMousePassiveMotion(int x, int y) {
+void GUI::togglePause() {
+	for (Button* bp : buttons) {
+		if (bp->buttongroup == button_group_pause) {
+			bp->activated = !bp->activated;
+			instance->input->paused = bp->activated;
+			if (bp->activated) {
+				bp->text = "Unpause";
+			} else {
+				bp->text = "Pause";
+			}
+		}
+	}
+}
+
+void guiMouseMotion(int mx, int my) {
 	int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
 	GUI* gui = &instance->gphx->gui;
 	for (Button* b : gui->buttons) {
-		b->mousemovement(x, windowHeight - y, gui->mousedown);
+		int x = mx;
+		int y = windowHeight - my;
+		if (x > b->x && x < b->x + b->width && y > b->y && y < b->y + b->height) {
+			b->hovering = true;
+			if (gui->mousedown) {
+				b->clicking = true;
+			}
+			else {
+				b->clicking = false;
+			}
+		}
+		else {
+			b->hovering = false;
+			b->clicking = false;
+		}
+	}
+}
+
+void guiMousePassiveMotion(int mx, int my) {
+	int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
+	GUI* gui = &instance->gphx->gui;
+	for (Button* b : gui->buttons) {
+		float x = mx;
+		float y = windowHeight - my;
+		if (x > b->x && x < b->x + b->width && y > b->y && y < b->y + b->height) {
+			b->hovering = true;
+			if (gui->mousedown) {
+				b->clicking = true;
+			}
+			else {
+				b->clicking = false;
+			}
+		}
+		else {
+			b->hovering = false;
+			b->clicking = false;
+		}
 	}
 }
 
@@ -96,13 +195,96 @@ void guiloop() {
 }
 
 int GUI::initializeGraphics() {
+
+	float height = 30;
+	float spacing = 40;
+	float groupspacing = 20;
+
 	for (int i = 0; i < sim_materials; i++) {
-		Button* b = new Button(20, i * 50 + 20, 260, 40, instance->sim->materialnames[i]);
-		b->actionid = i;
+		int materialid = sim_materials - i - 1;
+		Button* b = new Button(20, i * spacing + 20, 260, height, instance->sim->materialnames[materialid]);
+		b->actionid = materialid;
+		b->buttonactivatedr = (float)instance->sim->colortable[b->actionid][0] / 255.0f;
+		b->buttonactivatedg = (float)instance->sim->colortable[b->actionid][1] / 255.0f;
+		b->buttonactivatedb = (float)instance->sim->colortable[b->actionid][2] / 255.0f;
+		b->textdefaultr = (float)instance->sim->colortable[b->actionid][0] / 255.0f;
+		b->textdefaultg = (float)instance->sim->colortable[b->actionid][1] / 255.0f;
+		b->textdefaultb = (float)instance->sim->colortable[b->actionid][2] / 255.0f;
+		b->buttongroup = button_group_materials;
 		buttons.push_back(b);
 	}
+
+	int offset = sim_materials;
+
+	for (int i = 0; i < brushes; i++) {
+		int brushid = brushes - i - 1;
+		Button* b = new Button(20, (i+ offset) * spacing + 20 + groupspacing, 260, height, instance->input->brushnames[brushid]);
+		b->actionid = brushid;
+		b->buttonactivatedr = 240 / 255.0f;
+		b->buttonactivatedg = 240 / 255.0f;
+		b->buttonactivatedb = 240 / 255.0f;
+		b->textdefaultr = 240 / 255.0f;
+		b->textdefaultg = 240 / 255.0f;
+		b->textdefaultb = 240 / 255.0f;
+		b->buttondefaultr = 100 / 255.0f;
+		b->buttondefaultg = 100 / 255.0f;
+		b->buttondefaultb = 100 / 255.0f;
+		b->buttongroup = button_group_brushes;
+		buttons.push_back(b);
+	}
+
+	offset = sim_materials + brushes;
+
+	{
+		Button* b = new Button(20, (0 + offset) * spacing + 20 + 2 * groupspacing, 260, height, "Load");
+		b->actionid = 0;
+		b->buttonactivatedr = 240 / 255.0f;
+		b->buttonactivatedg = 240 / 255.0f;
+		b->buttonactivatedb = 240 / 255.0f;
+		b->textdefaultr = 240 / 255.0f;
+		b->textdefaultg = 240 / 255.0f;
+		b->textdefaultb = 240 / 255.0f;
+		b->buttondefaultr = 100 / 255.0f;
+		b->buttondefaultg = 100 / 255.0f;
+		b->buttondefaultb = 100 / 255.0f;
+		b->buttongroup = button_group_load;
+		buttons.push_back(b);
+	}
+
+	{
+		Button* b = new Button(20, (1 + offset) * spacing + 20 + 2 * groupspacing, 260, height, "Save");
+		b->actionid = 0;
+		b->buttonactivatedr = 240 / 255.0f;
+		b->buttonactivatedg = 240 / 255.0f;
+		b->buttonactivatedb = 240 / 255.0f;
+		b->textdefaultr = 240 / 255.0f;
+		b->textdefaultg = 240 / 255.0f;
+		b->textdefaultb = 240 / 255.0f;
+		b->buttondefaultr = 100 / 255.0f;
+		b->buttondefaultg = 100 / 255.0f;
+		b->buttondefaultb = 100 / 255.0f;
+		b->buttongroup = button_group_save;
+		buttons.push_back(b);
+	}
+
+	{
+		Button* b = new Button(20, (2 + offset) * spacing + 20 + 2 * groupspacing, 260, height, "Pause");
+		b->actionid = 0;
+		b->buttonactivatedr = 240 / 255.0f;
+		b->buttonactivatedg = 240 / 255.0f;
+		b->buttonactivatedb = 240 / 255.0f;
+		b->textdefaultr = 240 / 255.0f;
+		b->textdefaultg = 240 / 255.0f;
+		b->textdefaultb = 240 / 255.0f;
+		b->buttondefaultr = 100 / 255.0f;
+		b->buttondefaultg = 100 / 255.0f;
+		b->buttondefaultb = 100 / 255.0f;
+		b->buttongroup = button_group_pause;
+		buttons.push_back(b);
+	}
+
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowSize(300, 600);
+	glutInitWindowSize(300, (offset+3)*spacing + 4*groupspacing);
 	glutInitWindowPosition(50, 50);
 	windowId = glutCreateWindow("Tools");
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -110,6 +292,8 @@ int GUI::initializeGraphics() {
 	glutMouseFunc(guiMouseClick);
 	glutMotionFunc(guiMouseMotion);
 	glutPassiveMotionFunc(guiMousePassiveMotion);
+	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(special);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

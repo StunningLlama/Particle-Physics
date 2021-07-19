@@ -1433,6 +1433,10 @@ void Simulation::deleteParticle(Particle* p) {
 }
 
 void Simulation::addParticleToRigidBody(Particle* p, Rigidbody* rb) {
+	if (p->rigidbodyid != -1) {
+		std::cout << "Error: Particle is already part of rigid body." << std::endl;
+		return;
+	}
 	p->rigidbodyid = rb->id;
 	p->rigidbodyindex = rb->numberofparticles;
 	rb->particles.push_back(p);
@@ -1457,6 +1461,8 @@ void Simulation::removeParticleFromRigidBody(Particle* p) {
 	rb->coordinates.pop_back();
 	rb->numberofparticles--;
 	rb->modified = true;
+
+	p->rigidbodyid = -1;
 }
 
 Rigidbody* Simulation::addRigidBody(bool brittle) {
@@ -1484,10 +1490,9 @@ void Simulation::deleteRigidBody(Rigidbody* r) {
 }
 
 Bond* Simulation::addBond(Particle* p, Particle* q, int bondtype, float length) {
-	int numberofbonds = p->bonds.size();
 	if (p == q)
 		return nullptr;
-	for (int i = 0; i < numberofbonds; i++) {
+	for (int i = 0; i < p->numberofbonds; i++) {
 		Bond* b = p->bonds[i];
 		if (b->particleB == q || b->particleA == q)
 			return nullptr;
@@ -1500,10 +1505,6 @@ Bond* Simulation::addBond(Particle* p, Particle* q, int bondtype, float length) 
 	p->numberofbonds++;
 	q->numberofbonds++;
 	bonds.push_back(nb);
-
-	if (p->rigidbodyid != -1 && q->rigidbodyid != -1 && q->rigidbodyid == q->rigidbodyid) {
-		addBondToRigidBody(nb, objects[p->rigidbodyid]);
-	}
 
 	g_bonds.push_back(0.0f);
 	g_bonds.push_back(1.0f);
@@ -1531,7 +1532,7 @@ void Simulation::deleteBond(Particle* p, Particle* q) {
 	}
 
 	if (fb == nullptr) {
-		std::cout << "wut" << std::endl;
+		std::cout << "Error: Particle is not bonded" << std::endl;
 		return;
 	}
 
@@ -1568,6 +1569,10 @@ void Simulation::deleteBond(Particle* p, Particle* q) {
 }
 
 void Simulation::addBondToRigidBody(Bond* b, Rigidbody* rb) {
+	if (b->rigidbodyid != -1) {
+		std::cout << "Error: Bond is already part of rigid body." << std::endl;
+		return;
+	}
 	b->rigidbodyid = rb->id;
 	b->rigidbodyindex = rb->numberofbonds;
 	rb->internalbonds.push_back(b);
@@ -1575,6 +1580,8 @@ void Simulation::addBondToRigidBody(Bond* b, Rigidbody* rb) {
 }
 
 void Simulation::removeBondFromRigidBody(Bond* fb) {
+	if (fb->rigidbodyid == -1)
+		return;
 	Rigidbody* rb = objects[fb->rigidbodyid];
 
 	int index = fb->rigidbodyindex;
@@ -1602,7 +1609,10 @@ void Simulation::attachToNearbyParticles(Particle* p, int bondtype, float maxdis
 				Particle* qtmp = q;
 				q = q->next;
 				if ((qtmp->strokenumber == p->strokenumber || !respectbrushstroke) && dist < maxdistance) {
-					addBond(p, qtmp, bondtype, dist);
+					Bond* b = addBond(p, qtmp, bondtype, dist);
+					if (b != nullptr && p->rigidbodyid != -1 && qtmp->rigidbodyid != -1 && p->rigidbodyid == qtmp->rigidbodyid) {
+						addBondToRigidBody(b, objects[p->rigidbodyid]);
+					}
 				}
 			}
 		}
@@ -1612,6 +1622,9 @@ void Simulation::attachToNearbyParticles(Particle* p, int bondtype, float maxdis
 void Simulation::clear() {
 	for (int i = particleid - 1; i >= 0; i--) {
 		deleteParticle(particles[i]);
+	}
+	for (int i = objectid - 1; i >= 0; i--) {
+		deleteRigidBody(objects[i]);
 	}
 }
 

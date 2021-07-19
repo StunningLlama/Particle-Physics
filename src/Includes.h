@@ -1,4 +1,6 @@
+#pragma once
 #define WINDOWS
+#define DEBUG true
 
 #ifdef WINDOWS
 #ifndef NOMINMAX
